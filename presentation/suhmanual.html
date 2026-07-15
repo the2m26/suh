@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>СӨХ программын танилцуулга</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width:100%; height:100%; background:#0a0a0a; overflow:hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    touch-action: none; user-select: none;
+  }
+
+  /* ---------- Эхлэх дэлгэц ---------- */
+  #startScreen {
+    position: fixed; inset: 0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background: radial-gradient(circle at 50% 40%, #1b1b1f 0%, #0a0a0a 70%);
+    color:#fff; text-align:center; padding:24px;
+    z-index: 10;
+  }
+  #startScreen h1 {
+    font-size: clamp(20px, 4vw, 34px);
+    font-weight: 600; letter-spacing: 0.3px; margin-bottom: 8px;
+  }
+  #startScreen p.sub {
+    color:#9a9a9a; font-size: clamp(13px, 2vw, 16px); margin-bottom: 36px;
+  }
+  #startBtn {
+    padding: 16px 48px; font-size: 18px; font-weight: 600;
+    border-radius: 999px; border: none; cursor: pointer;
+    background: #ffffff; color:#0a0a0a;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+  #startBtn:active { transform: scale(0.96); opacity:0.85; }
+
+  #startScreen .warn {
+    margin-top: 28px; font-size: 13px; color:#e0a33e; max-width: 480px; line-height:1.5;
+  }
+
+  /* ---------- Үзүүлэн (viewer) ---------- */
+  #viewer {
+    position: fixed; inset: 0; background:#000;
+    display:flex; align-items:center; justify-content:center;
+    z-index: 20; cursor: pointer;
+  }
+  #viewer.hidden, #startScreen.hidden { display:none; }
+
+  .slide-img {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    max-width: 100vw; max-height: 100dvh; max-height: 100vh;
+    width:auto; height:auto;
+    opacity: 0;
+    /* transition-duration нь JS доторх TRANSITION_MS-ээс автоматаар тохируулагдана */
+    transition-property: opacity;
+    transition-timing-function: ease-in-out;
+    pointer-events: none;
+    will-change: opacity;
+  }
+
+  #counter {
+    position: fixed; bottom: 18px; right: 22px;
+    color: rgba(255,255,255,0.55); font-size: 14px;
+    letter-spacing: 0.5px; z-index: 25; pointer-events:none;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #hint {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.6); font-size: 13px; text-align:center;
+    z-index: 25; pointer-events:none; transition: opacity 1s ease;
+    background: rgba(255,255,255,0.06); padding:8px 16px; border-radius: 999px;
+    backdrop-filter: blur(4px);
+  }
+  #hint.fade { opacity: 0; }
+</style>
+</head>
+<body>
+
+  <!-- ================= ЭХЛЭХ ДЭЛГЭЦ ================= -->
+  <div id="startScreen">
+    <h1>СӨХ программын танилцуулга</h1>
+    <p class="sub" id="slideCountLabel"></p>
+    <button id="startBtn">Эхлэх</button>
+    <p class="warn" id="emptyWarn" style="display:none;">
+      Зургийн жагсаалт хоосон байна. HTML файлын дотор байрлах <code>SLIDES</code>
+      массивт зургийн файлын нэрсийг бичнэ үү (доорх тайлбарыг үзнэ үү).
+    </p>
+  </div>
+
+  <!-- ================= ҮЗҮҮЛЭН ================= -->
+  <div id="viewer" class="hidden">
+    <img id="imgA" class="slide-img" alt="">
+    <img id="imgB" class="slide-img" alt="">
+    <div id="counter"></div>
+    <div id="hint">← дараагийн &nbsp;·&nbsp; → өмнөх &nbsp;·&nbsp; ↑ чирэхэд гарна</div>
+  </div>
+
+<script>
+/* ======================================================================
+   ЗУРАГ БАЙРЛУУЛАХ ХЭСЭГ — ЗААВАР
+   ----------------------------------------------------------------------
+   1) Зургийн файлуудаа энэ suhmanual.html-тэй ЯГ ИЖИЛ фолдерт хадгал.
+      Жишээ нь "images" нэртэй дэд фолдер үүсгээд дотор нь хийвэл:
+        suhmanual.html
+        /images/01.jpg
+        /images/02.jpg
+        ...
+   2) Доорх SLIDES массивт зургуудынхаа замыг (файлын нэрийг) дараалалын
+      дагуу бичнэ. Жишээ:
+        const SLIDES = [
+          "images/01.jpg",
+          "images/02.jpg",
+          "images/03.png"
+        ];
+   3) Зураг бүр 16:9 хэвтээ харьцаатай (жишээ нь 1920x1080) байвал хамгийн
+      цэвэрхэн харагдана. Өөр харьцаатай ч ажиллах бөгөөд дэлгэц дээр
+      автоматаар зохицуулагдана (хар зурвастай).
+   4) Файлын нэрэнд зай (space) бүү ашигла, зурган доор Кирилл нэр
+      ашиглахгүй байхыг зөвлөж байна — GitHub Pages дээр алдаа гарч болно.
+   ====================================================================== */
+
+  const SLIDES = [];
+  for (let i = 1; i <= 67; i++) SLIDES.push(i + '.png');       // 1.png ... 67.png
+  for (let i = 1; i <= 21; i++) SLIDES.push('a' + i + '.png'); // a1.png ... a21.png
+  // Нийт: 88 зураг, бүгд энэ HTML файлтай ижил фолдерт байх ёстой
+
+  /* ====================================================================
+     Доор энэ мөрөөс хойш зөвхөн код — засах шаардлагагүй.
+     ==================================================================== */
+
+  // ★★★★★ ЭФФЕКТИЙН ХУРД ЭНД ГАНЦХАН ГАЗАРТ ТОХИРУУЛНА (миллисекунд) ★★★★★
+  const TRANSITION_MS = 1200;   // жишээ: 300 = хурдан, 700 = дунд, 1200 = удаан зөөлөн
+
+  const startScreen   = document.getElementById('startScreen');
+  const startBtn      = document.getElementById('startBtn');
+  const emptyWarn     = document.getElementById('emptyWarn');
+  const slideCountLbl = document.getElementById('slideCountLabel');
+  const viewer        = document.getElementById('viewer');
+  const counterEl     = document.getElementById('counter');
+  const hintEl        = document.getElementById('hint');
+
+  // Хоёр давхар зураг — нэг нь тод (front), нөгөө нь далд (back) хэвээр
+  // байгаад, шилжих үед хоёул зэрэг opacity-гаа солиод бие биедээ уусдаг.
+  let frontImg = document.getElementById('imgA');
+  let backImg  = document.getElementById('imgB');
+  frontImg.style.transitionDuration = TRANSITION_MS + 'ms';
+  backImg.style.transitionDuration  = TRANSITION_MS + 'ms';
+  frontImg.style.zIndex = 2;
+  backImg.style.zIndex  = 1;
+
+  let index = 0;
+  let isTransitioning = false;
+  let suppressClick = false;
+  let hintTimeout = null;
+
+  if (SLIDES.length === 0) {
+    emptyWarn.style.display = 'block';
+    startBtn.disabled = true;
+    startBtn.style.opacity = 0.4;
+    startBtn.style.cursor = 'not-allowed';
+    slideCountLbl.textContent = '';
+  } else {
+    slideCountLbl.textContent = SLIDES.length + ' зурагтай';
+  }
+
+  // ---------- Урьдчилан ачаалах ----------
+  function preload(i) {
+    if (i < 0 || i >= SLIDES.length) return;
+    const im = new Image();
+    im.src = SLIDES[i];
+  }
+
+  // ---------- Слайд солих (жинхэнэ crossfade — зураг зурганд шууд уусна) ----------
+  function renderSlide(newIndex) {
+    if (SLIDES.length === 0 || isTransitioning) return;
+    isTransitioning = true;
+
+    if (newIndex < 0) newIndex = SLIDES.length - 1;
+    if (newIndex >= SLIDES.length) newIndex = 0;
+    index = newIndex;
+
+    backImg.style.zIndex = 2;   // шинэ зургийг өмнөх зургийн дээр байрлуулна
+    frontImg.style.zIndex = 1;
+
+    backImg.onload = () => {
+      // хоёр зураг зэрэг эсрэг чиглэлд opacity шилжинэ → бие биедээ уусна
+      requestAnimationFrame(() => {
+        backImg.style.opacity = 1;
+        frontImg.style.opacity = 0;
+      });
+      setTimeout(() => {
+        // үүрэг солино: шинэ зураг одоо "front" боллоо
+        const tmp = frontImg;
+        frontImg = backImg;
+        backImg = tmp;
+        isTransitioning = false;
+      }, TRANSITION_MS);
+    };
+    backImg.onerror = () => { isTransitioning = false; };
+    backImg.src = SLIDES[index];
+
+    counterEl.textContent = (index + 1) + ' / ' + SLIDES.length;
+    preload(index + 1);
+    preload(index - 1);
+  }
+
+  function next() { renderSlide(index + 1); }
+  function prev() { renderSlide(index - 1); }
+
+  // ---------- Hint автоматаар бүдгэрэх ----------
+  function showHintBriefly() {
+    hintEl.classList.remove('fade');
+    clearTimeout(hintTimeout);
+    hintTimeout = setTimeout(() => hintEl.classList.add('fade'), 3500);
+  }
+
+  // ---------- Fullscreen ----------
+  function requestFS() {
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen ||
+                el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (req) {
+      req.call(el).catch(() => { /* iPhone Safari FS API дэмжихгүй бол чимээгүй алгасна */ });
+    }
+  }
+
+  function exitFS() {
+    const isFS = document.fullscreenElement || document.webkitFullscreenElement ||
+                 document.mozFullScreenElement || document.msFullscreenElement;
+    if (isFS) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen ||
+                   document.mozCancelFullScreen || document.msExitFullscreen;
+      if (exit) exit.call(document).catch(() => {});
+    }
+  }
+
+  // ---------- Танилцуулга эхлэх ----------
+  function startPresentation() {
+    if (SLIDES.length === 0) return;
+    requestFS();
+    startScreen.classList.add('hidden');
+    viewer.classList.remove('hidden');
+    index = 0;
+    isTransitioning = false;
+
+    // эхний зургийг шууд (шилжилтгүй) frontImg дээр тавиад аажим тодруулна
+    frontImg.style.transitionDuration = '0ms';
+    frontImg.style.opacity = 0;
+    backImg.style.opacity = 0;
+    frontImg.style.zIndex = 2;
+    backImg.style.zIndex = 1;
+    frontImg.src = SLIDES[0];
+    frontImg.onload = () => {
+      requestAnimationFrame(() => {
+        frontImg.style.transitionDuration = TRANSITION_MS + 'ms';
+        frontImg.style.opacity = 1;
+      });
+    };
+
+    counterEl.textContent = '1 / ' + SLIDES.length;
+    preload(1);
+    showHintBriefly();
+  }
+
+  // ---------- Танилцуулга зогсоох ----------
+  function stopPresentation() {
+    exitFS();
+    viewer.classList.add('hidden');
+    startScreen.classList.remove('hidden');
+  }
+
+  startBtn.addEventListener('click', startPresentation);
+
+  // ---------- Хулганы товч: дараагийн зураг ----------
+  viewer.addEventListener('click', (e) => {
+    if (suppressClick) return;
+    showHintBriefly();
+    next();
+  });
+
+  // ---------- Гар (keyboard) ----------
+  document.addEventListener('keydown', (e) => {
+    if (viewer.classList.contains('hidden')) return;
+    if (e.key === 'ArrowLeft') { showHintBriefly(); next(); }
+    else if (e.key === 'ArrowRight') { showHintBriefly(); prev(); }
+    else if (e.key === 'Escape') { stopPresentation(); }
+  });
+
+  // ---------- Хүрэлт (touch): чирэх дохио ----------
+  let touchStartX = 0, touchStartY = 0;
+
+  viewer.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  viewer.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const absDx = Math.abs(dx), absDy = Math.abs(dy);
+    const THRESHOLD = 45;
+
+    if (absDy > absDx && dy < -THRESHOLD) {
+      // доороос дээш чирэх → гарах
+      stopPresentation();
+    } else if (absDx > absDy && absDx > THRESHOLD) {
+      showHintBriefly();
+      if (dx < 0) next();  // зүүн тийш чирэх → дараагийн
+      else prev();          // баруун тийш чирэх → өмнөх
+    }
+
+    // touchend-ийн дараа автоматаар үүсэх synthetic click-ийг таслах
+    suppressClick = true;
+    setTimeout(() => { suppressClick = false; }, 350);
+  }, { passive: true });
+
+  // ---------- Хэрэглэгч Esc дараад эсвэл системийн дохиогоор fullscreen-ээс гарвал UI-г эх байдалд нь оруулах ----------
+  function onFsChange() {
+    const isFS = document.fullscreenElement || document.webkitFullscreenElement ||
+                 document.mozFullScreenElement || document.msFullscreenElement;
+    if (!isFS && !viewer.classList.contains('hidden')) {
+      viewer.classList.add('hidden');
+      startScreen.classList.remove('hidden');
+    }
+  }
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+  document.addEventListener('mozfullscreenchange', onFsChange);
+  document.addEventListener('MSFullscreenChange', onFsChange);
+</script>
+</body>
+</html>
