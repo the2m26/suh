@@ -10,8 +10,8 @@
 // ============================================================
 // SUPABASE ХОЛБОЛТ
 // ============================================================
-const SUPABASE_URL = 'https://vkkhwemfefgpbximudev.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZra2h3ZW1mZWZncGJ4aW11ZGV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MjgwNjUsImV4cCI6MjA5ODMwNDA2NX0.BluP4n2IkiEFEn5r-Fe6X8w3IRTAjzxxryHpHj3-NuU';
+const SUPABASE_URL = 'https://ndbhgzohmjumicziefnr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kYmhnem9obWp1bWljemllZm5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NTE3OTYsImV4cCI6MjA5OTQyNzc5Nn0.6iDl7omVwM4_cp5zRFE-2lnl_Y6CBgTWO6JUPxmqu-g';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // --- INIT: бүх өгөгдөл ачаалах ---
 async function db_init() {
