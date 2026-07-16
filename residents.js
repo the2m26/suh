@@ -354,10 +354,11 @@ async function saveResident() {
     toast('Мэдээлэл шинэчлэгдлээ ✓','success');
   } else {
     residents.push({id:nextId++,...data});
-    toast(`${apt} тоот өмчлөгч нэмэгдлээ ✓`,'success');
+    toast(`${aptId} тоот өмчлөгч нэмэгдлээ ✓`,'success');
   }
   closeModal('modal-resident');
   renderResidents();
+  updateSidebarCount();
 }
 async function deleteResident(id) {
   if(!confirm('Устгах уу?')) return;
