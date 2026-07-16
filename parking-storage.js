@@ -55,9 +55,9 @@ function _populateSpotFilters(prefix, types) {
 // label (жиш нь "B1-A-005", spotFullLabel()-ээр үүсгэсэн) хадгалагддаг тул,
 // зөвхөн raw дугаараар ("005") биш, БҮТЭН label-ээр тааруулж хайх ёстой.
 function _findSpotOwner(fullLabel, field) {
-  const r = residents.find(x=>x && (x[field]||[]).includes(fullLabel));
+  const r = residents.find(x=>x && (x[field]||[]).some(v=>_labelsMatch(v, fullLabel)));
   if(r) return {type:'resident', entity:r, name: ((r.firstname||'')+' '+(r.lastname||'')).trim()||'—'};
-  const b = businesses.find(x=>x && (x[field]||[]).includes(fullLabel));
+  const b = businesses.find(x=>x && (x[field]||[]).some(v=>_labelsMatch(v, fullLabel)));
   if(b) return {type:'business', entity:b, name: b.name||'—'};
   return null;
 }
@@ -347,12 +347,12 @@ function getSpotOwner(kind, fullLabel, excludeType, excludeId) {
   for(const r of residents) {
     if(!r) continue;
     if(excludeType==='resident' && r.id===excludeId) continue;
-    if((r[ownerField]||[]).includes(fullLabel)) return {type:'resident', obj:r};
+    if((r[ownerField]||[]).some(x=>_labelsMatch(x, fullLabel))) return {type:'resident', obj:r};
   }
   for(const b of businesses) {
     if(!b) continue;
     if(excludeType==='business' && b.id===excludeId) continue;
-    if((b[ownerField]||[]).includes(fullLabel)) return {type:'business', obj:b};
+    if((b[ownerField]||[]).some(x=>_labelsMatch(x, fullLabel))) return {type:'business', obj:b};
   }
   return null;
 }
@@ -366,7 +366,7 @@ function renderSpotPickerRow(kind, containerId, existingFullLabel, excludeType, 
   if(existingFullLabel) {
     typesArr.forEach(t=>{
       (t[numField]||[]).forEach(n=>{
-        if(spotFullLabel(t.floor_label,t.zone_label,n) === existingFullLabel) {
+        if(_labelsMatch(spotFullLabel(t.floor_label,t.zone_label,n), existingFullLabel)) {
           initFloor = t.floor_label||''; initZone = t.zone_label||''; initNum = n;
         }
       });
@@ -450,34 +450,35 @@ function validateSpotAssignment(kind, values, excludeType, excludeId) {
   const typesArr = _spotTypesArr(kind);
   const numField = _spotNumField(kind);
   const label = kind==='storage' ? 'агуулах' : 'зогсоол';
-  const allValid = new Set();
-  typesArr.forEach(t=>(t[numField]||[]).forEach(n=>allValid.add(spotFullLabel(t.floor_label,t.zone_label,n))));
+  const allValid = [];
+  typesArr.forEach(t=>(t[numField]||[]).forEach(n=>allValid.push(spotFullLabel(t.floor_label,t.zone_label,n))));
   for(const full of values) {
-    if(!allValid.has(full)) return `"${full}" гэсэн ${label} бүртгэлд олдсонгүй`;
+    if(!allValid.some(v=>_labelsMatch(v, full))) return `"${full}" гэсэн ${label} бүртгэлд олдсонгүй`;
     const owner = getSpotOwner(kind, full, excludeType, excludeId);
     if(owner) return `"${full}" ${label} аль хэдийн эзэнтэй байна`;
   }
   return null;
 }
+// Хоёр спот-лэйблийг (жиш нь "B2-012" ба "B2-12") ЯГ ТЭНЦҮҮ БИШ ч, зөвхөн эцсийн
+// тоон хэсгийн ПАДДИНГ (тэг) ялгаатай бол ижил гэж үзнэ. Давхар/бүсийн угтвар яг
+// таарах ёстой — зөвхөн сүүлийн тоон хэсэгт л уян хатан байна.
+// getSpotSqm/getSpotOwner/validateSpotAssignment ГУРАВ АЛЬ НЬ Ч ЭНЭ НЭГ функцээр
+// дамжиж харьцуулна — өмнө нь тус тусдаа (заримдаа хатуу, заримдаа уян хатан)
+// харьцуулдаг байсныг нэгтгэв.
+function _labelsMatch(a, b) {
+  if (a === b) return true;
+  const aParts = String(a).split('-'), bParts = String(b).split('-');
+  if (aParts.length !== bParts.length) return false;
+  return aParts.slice(0, -1).join('-').toLowerCase() === bParts.slice(0, -1).join('-').toLowerCase() &&
+         String(+aParts[aParts.length - 1]) === String(+bParts[bParts.length - 1]);
+}
 // Тухайн эзэмшигдсэн дугаарын (жишээ "B1-A-001") харгалзах м²-г Хаягжилт тохиргооноос олно.
-// ⚠️ Яг тэмдэгт мөрөөр (===) тааралгүй бол, тоон хэсгийг ТОО болгож (жиш нь "012" vs "12")
-// давхар харьцуулна — учир нь unit_numbers массивт хадгалагдсан утга DB-д тоо хэлбэрээр
-// (padding-гүй) хадгалагдсан ч, эзэмшигчийн бүртгэлд padding-тэй хэлбэрээр орсон байж
-// болзошгүй тул, зөвхөн яг тэнцүү мөр шаардвал бодит өгөгдөлд алдаа гарна.
 function getSpotSqm(kind, fullLabel) {
   const typesArr = _spotTypesArr(kind);
   const numField = _spotNumField(kind);
-  const fParts = String(fullLabel).split('-');
   for(const t of typesArr) {
     for(const n of (t[numField]||[])) {
-      const candidate = spotFullLabel(t.floor_label, t.zone_label, n);
-      if(candidate === fullLabel) return +t.sqm||0;
-      const cParts = candidate.split('-');
-      if(cParts.length === fParts.length &&
-         cParts.slice(0,-1).join('-') === fParts.slice(0,-1).join('-') &&
-         String(+cParts[cParts.length-1]) === String(+fParts[fParts.length-1])) {
-        return +t.sqm||0;
-      }
+      if(_labelsMatch(spotFullLabel(t.floor_label, t.zone_label, n), fullLabel)) return +t.sqm||0;
     }
   }
   return 0;
