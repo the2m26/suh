@@ -188,7 +188,7 @@ async function sendNotification() {
   const row = {
     type: category, title, content,
     recipient: `${NOTIF_FILTER_LABELS[filter]} (${kind==='resident'?'Сууц өмчлөгч':kind==='business'?'ААН':'СӨХ'})`,
-    date: todayStr(), sent: true,
+    date: todayStr(), sent: 1,
     recipient_kind: kind, recipient_filter: filter, recipient_specific_id: specificId,
     category, channels, recipients_snapshot: recipients,
     sent_at: new Date().toISOString()
