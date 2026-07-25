@@ -1646,10 +1646,10 @@ async function renderMobilePollDetail(pollId) {
           const aptTag = o.resident_id && aptById[o.resident_id] ? ` <span style="color:var(--text-secondary);font-weight:400">(${aptById[o.resident_id]} тоот)</span>` : '';
           html += `<div style="margin-bottom:8px">
             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-              <span>${isMine ? '✓ ' : ''}${escUserHtml(o.option_text || '')}${aptTag}</span><span style="color:var(--text-secondary)">${cnt} (${pct}%)</span>
+              <span>${isMine ? '<span style="color:#10B981">✓</span> ' : ''}${escUserHtml(o.option_text || '')}${aptTag}</span><span style="color:var(--text-secondary)">${cnt} (${pct}%)</span>
             </div>
             <div style="height:8px;border-radius:4px;background:rgba(255,255,255,0.12);overflow:hidden">
-              <div style="height:100%;width:${pct}%;background:${isMine ? 'var(--accent-orange)' : 'var(--accent-teal)'}"></div>
+              <div style="height:100%;width:${pct}%;background:var(--accent-teal)"></div>
             </div>
           </div>`;
         });
