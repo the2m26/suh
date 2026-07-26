@@ -57,24 +57,20 @@ function sbErr(error, context, opts = {}) {
 // л console-д бичээд vргэлжлvvлнэ (гол vйл ажиллагааг зогсоохгvй).
 async function triggerPushForRecipients(recipientsWithTitle, fallbackTitle) {
   try {
-    // ⚠️ 2026-07-27 засав: r.apt нь undefined vед String(undefined)="undefined"
-    // гэсэн ХООСОН БИШ ТЕКСТ vvсгэдэг байсан тул .filter(Boolean)-ээр унтардаггvй
-    // байсан — vр дvнд Supabase-ээс "apt='undefined'" гэж хайж хvн олдоогvй,
-    // send-push ХЭЗЭЭ Ч дуудагдаагvй байв. Одоо r.apt-ийг ЭХЛЭЭД шалгаж, зөвхөн
-    // БОДИТОЙГООР байгаа vед л жагсаалтад оруулна.
-    const residentApts = (recipientsWithTitle || [])
+    // 2026-07-27 засав: apt->хэрэглэгч (user_id) холболтыг client талд биш,
+    // send-push Edge Function дотор (service role, RLS-ийг тойрдог) хийлгэнэ.
+    // user_profiles-ийн SELECT RLS нь зөвхөн "auth.uid()=id" (өөрийн мөр) тул,
+    // Админ ч бусад хэрэглэгчийн профайлыг client-ээс шууд хайж чадахгvй байсан.
+    const apts = (recipientsWithTitle || [])
       .filter(r => r.apt !== undefined && r.apt !== null && r.apt !== '')
       .map(r => String(r.apt));
-    if (!residentApts.length) { console.warn('triggerPushForRecipients: apt-той хvлээн авагч алга — push дуудахгvй'); return; }
-    const { data: profiles, error: perr } = await sb.from('user_profiles')
-      .select('id, apt').eq('role', 'ot').in('apt', residentApts);
-    if (perr || !profiles || !profiles.length) { console.warn('triggerPushForRecipients: тохирох user_profiles (role=ot) олдсонгvй', residentApts); return; }
-    const userIds = profiles.map(p => p.id);
+    if (!apts.length) { console.warn('triggerPushForRecipients: apt-той хvлээн авагч алга — push дуудахгvй'); return; }
     const title = fallbackTitle || 'СӨХ — Шинэ мэдэгдэл';
     const body = (recipientsWithTitle[0] && recipientsWithTitle[0].content)
       ? String(recipientsWithTitle[0].content).slice(0, 120) : '';
-    const { error: fnErr } = await sb.functions.invoke('send-push', { body: { user_ids: userIds, title, body } });
+    const { data: pushRes, error: fnErr } = await sb.functions.invoke('send-push', { body: { apts, title, body } });
     if (fnErr) console.error('send-push дуудахад алдаа:', fnErr);
+    else console.info('send-push vр дvн:', pushRes);
   } catch (e) {
     console.error('Push илгээхэд алдаа (vл хамаарна, гол vйлдэл vргэлжилнэ):', e);
   }
