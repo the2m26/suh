@@ -1234,6 +1234,7 @@ async function saveTaxType() {
 
   const { error } = await sb.from('tax_types').upsert(row, { onConflict: 'code' });
   if (error) { toast('Хадгалахад алдаа гарлаа: ' + error.message, 'error'); return; }
+  logActivity('edit', 'nbb-settings', code, `${name} (${code})`);
   closeModal('modal-tax-type');
   toast('Хадгалагдлаа', 'success');
   renderTaxSettingsPage();
@@ -1249,6 +1250,7 @@ async function deleteTaxType(code) {
   if (!confirm('Энэ татвар/шимтгэлийг устгах уу?')) return;
   const { error } = await sb.from('tax_types').delete().eq('code', code);
   if (error) { toast('Устгахад алдаа гарлаа: ' + error.message, 'error'); return; }
+  logActivity('delete', 'nbb-settings', code, code);
   toast('Устгагдлаа', 'success');
   renderTaxSettingsPage();
 }
@@ -1356,6 +1358,7 @@ async function saveSalaryComponent() {
   };
   const { error } = await sb.from('salary_components').upsert(row, { onConflict: 'code' });
   if (error) { toast('Хадгалахад алдаа гарлаа: ' + error.message, 'error'); return; }
+  logActivity('edit', 'nbb-settings', code, `${name} (${code})`);
   closeModal('modal-salary-component');
   toast('Хадгалагдлаа', 'success');
   _salaryComponentsCache = null; // employees.js-ийн кэшийг цэвэрлэж, дараагийн уншилтад шинэ утга орно
@@ -1373,6 +1376,7 @@ async function deleteSalaryComponent(code) {
   if (!confirm('Энэ нэмэгдлийг устгах уу? Ажилтнуудын одоо байгаа хэрэглээ ч мөн устгагдана.')) return;
   const { error } = await sb.from('salary_components').delete().eq('code', code);
   if (error) { toast('Устгахад алдаа гарлаа: ' + error.message, 'error'); return; }
+  logActivity('delete', 'nbb-settings', code, code);
   toast('Устгагдлаа', 'success');
   _salaryComponentsCache = null;
   renderSalaryComponentsSettingsPage();
@@ -1439,4 +1443,3 @@ async function renderTaxTab() {
     </div>
     ${rows || '<div class="empty-state">Татварын тохиргоо алга</div>'}`;
 }
-
