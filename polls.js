@@ -332,6 +332,7 @@ async function savePoll() {
     }
   }
 
+  logActivity(editingPollId ? 'edit' : 'add', 'polls', editingPollId || null, title);
   toast(editingPollId ? 'Санал хураалт шинэчлэгдлээ ✓' : 'Санал хураалт ноорог хэлбэрээр хадгалагдлаа ✓', 'success');
   editingPollId = null;
   closePollCreate();
@@ -638,6 +639,7 @@ async function deleteDraftPoll(pollId) {
   if(!confirm('Энэ ноорог санал хураалтыг бүрмөсөн устгах уу?')) return;
   const {error} = await sb.from('polls').delete().eq('id', pollId);
   if(error) { toast('Алдаа: '+error.message, 'error'); return; }
+  logActivity('delete', 'polls', pollId, poll.title || null);
   toast('Ноорог устгагдлаа', 'success');
   closePollDetail();
   renderPollsPage();
