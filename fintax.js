@@ -104,6 +104,7 @@ async function saveSokhSettings() {
   const { error } = await sb.from('settings').upsert({ key: 'org_profile', value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
   if (error) { toast('Хадгалахад алдаа гарлаа: ' + error.message, 'error'); return; }
   _sokhOrgProfile = value;
+  logActivity('edit', 'sokh-settings', null, value.org_name || 'СӨХ тохиргоо');
   toast('СӨХ-ийн тохиргоо хадгалагдлаа ✓', 'success');
 }
 
@@ -1423,16 +1424,19 @@ async function saveJobPosition() {
     const { error } = await sb.from('job_positions').insert({ name });
     if (error) { toast('Хадгалахад алдаа гарлаа: ' + error.message, 'error'); return; }
   }
+  logActivity(editingJobPositionId ? 'edit' : 'add', 'fintax', editingJobPositionId || null, name);
   await db_loadJobPositions();
   renderJobPositionsTable(document.getElementById('job-position-search')?.value || '');
   closeModal('modal-job-position');
   toast('Хадгалагдлаа ✓', 'success');
 }
 async function deleteJobPosition(id) {
-  if (currentProfile?.role !== 'admin') { toast('Танд энэ үйлдлийг хийх эрх байхгүй байна', 'error'); return; }
+  if (currentProfile?.role !== 'admin') { toast('Танд энэ vйлдлийг хийх эрх байхгvй байна', 'error'); return; }
   if (!confirm('Устгах уу?')) return;
+  const delName = jobPositions.find(p=>p.id===id)?.name || null;
   const { error } = await sb.from('job_positions').delete().eq('id', id);
   if (error) { toast('Устгахад алдаа гарлаа: ' + error.message, 'error'); return; }
+  logActivity('delete', 'fintax', id, delName);
   await db_loadJobPositions();
   renderJobPositionsTable(document.getElementById('job-position-search')?.value || '');
   toast('Устгагдлаа', 'success');
@@ -1495,5 +1499,6 @@ async function saveAppSettingsModules() {
   const keys = Array.from(document.querySelectorAll('.app-settings-mod-cb:checked')).map(cb => cb.value);
   const { error } = await sb.from('settings').upsert({ key: 'mobile_modules', value: { keys }, updated_at: new Date().toISOString() }, { onConflict: 'key' });
   if (error) { toast('Хадгалахад алдаа гарлаа: ' + error.message, 'error'); return; }
+  logActivity('edit', 'app-settings', null, `${keys.length} модуль идэвхтэй`);
   toast('Апп тохиргоо хадгалагдлаа ✓', 'success');
 }
