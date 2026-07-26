@@ -333,6 +333,7 @@ async function saveBizPayment() {
       .then(res => { if (!res.success) console.warn('Journal entry үүсгэхэд алдаа:', res.error); })
       .catch(e => console.warn('Journal entry үүсгэхэд алдаа:', e));
   }
+  logActivity('payment', 'transactions', b.id, `${b.name} — ${fmtMoney(amount)}`);
   closeModal('modal-biz-payment');
   toast(b.name+' '+month+'-р сарын төлбөр бүртгэгдлээ ✓','success');
 }
