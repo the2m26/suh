@@ -816,6 +816,7 @@ async function saveMaintenance() {
   };
   const ok = await db_saveMaintenance(data);
   if(!ok) { toast('Хадгалахад алдаа гарлаа — таны рольд энэ үйлдэл хийх эрх байхгүй байж болзошгүй','error'); return; }
+  const _assetName = assets.find(a=>a.id===+assetIdRaw)?.name || null;
   if(editingMaintenanceId) {
     const idx = assetMaintenance.findIndex(m=>m.id===editingMaintenanceId);
     if(idx>=0) assetMaintenance[idx] = {...assetMaintenance[idx], ...data};
@@ -824,6 +825,7 @@ async function saveMaintenance() {
     assetMaintenance.push({id:nextId++, ...data});
     toast('Засвар бүртгэгдлээ','success');
   }
+  logActivity(editingMaintenanceId ? 'edit' : 'add', 'assets', data.dbId || data.id || null, `${_assetName || ''} — ${data.description || ''}`.trim());
   closeModal('modal-maintenance');
   renderMaintenance(document.getElementById('asset-maintenance-search')?.value||'');
 }
@@ -838,6 +840,7 @@ async function deleteMaintenance(id) {
   }
   assetMaintenance = assetMaintenance.filter(x=>x.id!==id);
   renderMaintenance(document.getElementById('asset-maintenance-search')?.value||'');
+  logActivity('delete', 'assets', id, null);
   toast('Устгагдлаа','success');
 }
 
@@ -909,6 +912,7 @@ async function saveAssetCategory() {
   };
   const { error } = await sb.from('asset_categories').upsert(row, { onConflict: 'code' });
   if(error) { toast('Хадгалахад алдаа гарлаа: ' + error.message, 'error'); return; }
+  logActivity('edit', 'asset-settings', code, label);
   closeModal('modal-asset-category');
   toast('Хадгалагдлаа', 'success');
   await db_loadAssetSettings();
@@ -922,6 +926,7 @@ async function deleteAssetCategory(code) {
   if(!confirm(msg)) return;
   const { error } = await sb.from('asset_categories').delete().eq('code', code);
   if(error) { toast('Устгахад алдаа гарлаа: ' + error.message, 'error'); return; }
+  logActivity('delete', 'asset-settings', code, code);
   toast('Устгагдлаа', 'success');
   await db_loadAssetSettings();
   renderAssetCategorySettingsList();
@@ -963,6 +968,7 @@ async function saveAssetType() {
   if(!label) { toast('Төрлийн нэрийг бөглөнө үү', 'error'); return; }
   const { error } = await sb.from('asset_types').insert({ category_code: categoryCode, label });
   if(error) { toast('Хадгалахад алдаа гарлаа: ' + (error.code==='23505' ? 'Энэ нэртэй төрөл аль хэдийн байна' : error.message), 'error'); return; }
+  logActivity('add', 'asset-settings', null, label);
   closeModal('modal-asset-type');
   toast('Хадгалагдлаа', 'success');
   await db_loadAssetSettings();
@@ -971,8 +977,10 @@ async function saveAssetType() {
 }
 async function deleteAssetType(id) {
   if(!confirm('Энэ төрлийг устгах уу?')) return;
+  const delLabel = ASSET_TYPES.find(t=>t.id===id)?.label || null;
   const { error } = await sb.from('asset_types').delete().eq('id', id);
   if(error) { toast('Устгахад алдаа гарлаа: ' + error.message, 'error'); return; }
+  logActivity('delete', 'asset-settings', id, delLabel);
   toast('Устгагдлаа', 'success');
   await db_loadAssetSettings();
   renderAssetTypeSettingsList();
@@ -1015,6 +1023,7 @@ async function saveAssetLocation() {
     ? await sb.from('asset_locations').update({ label }).eq('id', editingAssetLocationId)
     : await sb.from('asset_locations').insert({ label });
   if(error) { toast('Хадгалахад алдаа гарлаа: ' + (error.code==='23505' ? 'Энэ нэртэй байршил аль хэдийн байна' : error.message), 'error'); return; }
+  logActivity(editingAssetLocationId ? 'edit' : 'add', 'asset-settings', editingAssetLocationId || null, label);
   closeModal('modal-asset-location');
   toast('Хадгалагдлаа', 'success');
   await db_loadAssetSettings();
@@ -1022,8 +1031,10 @@ async function saveAssetLocation() {
 }
 async function deleteAssetLocation(id) {
   if(!confirm('Энэ байршлыг устгах уу?')) return;
+  const delLabel = ASSET_LOCATIONS.find(l=>l.id===id)?.label || null;
   const { error } = await sb.from('asset_locations').delete().eq('id', id);
   if(error) { toast('Устгахад алдаа гарлаа: ' + error.message, 'error'); return; }
+  logActivity('delete', 'asset-settings', id, delLabel);
   toast('Устгагдлаа', 'success');
   await db_loadAssetSettings();
   renderAssetLocationSettingsList();
