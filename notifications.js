@@ -350,6 +350,13 @@ async function sendNotification() {
   const ok = await db_saveNotificationNew(row);
   if(!ok) { toast('Илгээхэд алдаа гарлаа', 'error'); return; }
 
+  // 2026-07-27 нэмэв: Мэдэгдэл илгээх үйлдэл Протокол (activity_log)-д огт
+  // бүртгэгдэхгүй байсныг олж зассан — ACTLOG_ACTION_LABELS-д "notify" үйлдэл
+  // (Мэдэгдэл илгээх), AUTH_MODULES-д "notifications" модуль аль хэдийн
+  // бүртгэлтэй байсан ч, sendNotification() үүнийг ХЭЗЭЭ Ч дуудахгүй байв.
+  logActivity('notify', 'notifications', notifications[0]?.id || null, `${recipientLabel} — ${title}`);
+
+
   let msg = `${recipients.length} хүлээн авагчид In-app мэдэгдэл хадгалагдлаа ✓`;
   if(sendResult.emailSkipped || sendResult.smsSkipped) {
     msg += ' (Мэйл/СМС: гадаад үйлчилгээ хараахан тохируулагдаагүй тул алгассан)';
