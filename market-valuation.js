@@ -261,6 +261,7 @@ async function saveMarketValuation() {
   const idx = marketValuations.findIndex(r=>r.year===year && r.month===month);
   if(idx>=0) marketValuations[idx] = data; else marketValuations.push(data);
   marketValuations.sort((a,b)=> a.year-b.year || a.month-b.month);
+  logActivity('edit', 'market-valuation', data?.id || null, `${year}/${month}`);
   closeModal('modal-market-valuation');
   renderMarketValuationCards();
   toast('Хадгалагдлаа ✓','success');
