@@ -320,6 +320,7 @@ async function saveFeeCatalogRow() {
     ({ error } = await sb.from('fee_catalog').insert(row));
   }
   if (sbErr(error, 'Тарифын каталог хадгалах')) return;
+  logActivity(_feeCatalogEditingId ? 'edit' : 'add', 'tariff-settings', _feeCatalogEditingId || null, `${name} (${_feeCatalogEditingTab==='resident'?'Сууц':'ААН'}) — ${fmtMoney(row.rate)}`);
   await db_loadFeeCatalog();
   closeModal('modal-fee-catalog');
   renderFeeCatalogTable('resident');
@@ -335,6 +336,7 @@ async function deleteFeeCatalogRow(id) {
   if (!confirm('Энэ төлбөрийг устгах уу? Тооцоолол шууд өөрчлөгдөнө.')) return;
   const { error } = await sb.from('fee_catalog').delete().eq('id', id);
   if (sbErr(error, 'Тарифын каталог устгах')) return;
+  logActivity('delete', 'tariff-settings', id, f ? `${f.name} (${f.applies_to==='resident'?'Сууц':'ААН'})` : null);
   await db_loadFeeCatalog();
   renderFeeCatalogTable('resident');
   renderFeeCatalogTable('business');
@@ -934,6 +936,7 @@ async function savePayment() {
         .then(res => { if (!res.success) console.warn('Journal entry үүсгэхэд алдаа:', res.error); })
         .catch(e => console.warn('Journal entry үүсгэхэд алдаа:', e));
     }
+    logActivity('payment', 'transactions', b.id, `${b.name} — ${fmtMoney(amount)}`);
     closeModal('modal-payment');
     renderBusinesses();
     renderPaymentsTable('completed');
@@ -966,6 +969,7 @@ async function savePayment() {
       .then(res => { if (!res.success) console.warn('Journal entry үүсгэхэд алдаа:', res.error); })
       .catch(e => console.warn('Journal entry үүсгэхэд алдаа:', e));
   }
+  logActivity('payment', 'transactions', r.id, `${String(r.apt)} тоот — ${fmtMoney(amount)}`);
   closeModal('modal-payment');
   renderResidents();
   renderPaymentsTable('completed');
@@ -1026,6 +1030,7 @@ async function saveIncomeSubcat() {
     const { error } = await sb.from('income_subcategories').insert({ name, sort_order: incomeSubcats.length + 1 });
     if (error) { toast('Хадгалахад алдаа гарлаа: ' + error.message, 'error'); return; }
   }
+  logActivity(editingIncomeSubcatId ? 'edit' : 'add', 'nbb-settings', editingIncomeSubcatId || null, name);
   await db_loadIncomeSubcats();
   renderIncomeSubcatsList();
   closeModal('modal-income-subcat');
@@ -1034,8 +1039,10 @@ async function saveIncomeSubcat() {
 async function deleteIncomeSubcat(id) {
   if (currentProfile?.role !== 'admin' && !canWrite('accounting')) { toast('Танд энэ үйлдлийг хийх эрх байхгүй байна', 'error'); return; }
   if (!confirm('Устгах уу?')) return;
+  const delName = incomeSubcats.find(c=>c.id===id)?.name || null;
   const { error } = await sb.from('income_subcategories').delete().eq('id', id);
   if (error) { toast('Устгахад алдаа гарлаа: ' + error.message, 'error'); return; }
+  logActivity('delete', 'nbb-settings', id, delName);
   await db_loadIncomeSubcats();
   renderIncomeSubcatsList();
   toast('Устгагдлаа', 'success');
@@ -1097,6 +1104,7 @@ async function saveExpense(){
       .then(res => { if (!res.success) console.warn('Journal entry үүсгэхэд алдаа:', res.error); })
       .catch(e => console.warn('Journal entry үүсгэхэд алдаа:', e));
   }
+  logActivity('add', 'transactions', newTx.id, `${desc} — ${fmtMoney(amount)}`);
   closeModal('modal-expense');
   if(type==='expense')renderExpenseTable();else renderIncomeTable();
   renderClientele();
