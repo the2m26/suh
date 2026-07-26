@@ -115,6 +115,7 @@ async function saveInvoiceScheduleSettings() {
   const { error } = await sb.from('settings').upsert({ key: 'invoice_schedule', value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
   if (sbErr(error, 'Нэхэмжлэлийн хуваарь хадгалах')) return;
   invoiceSchedule = value;
+  logActivity('edit', 'nbb-settings', null, `Нэхэмжлэлийн хуваарь — бvртгэх:${accrueDay}, илгээх:${sendDay}, төлөх хугацаа:${dueDay}`);
   toast('Нэхэмжлэлийн хуваарь хадгалагдлаа ✓', 'success');
 }
 
@@ -212,6 +213,7 @@ async function recordMonthlyInvoice(auto) {
   if (skipped) summary += ` Энэ сарын ${skipped} нэхэмжлэлийг Журналд аль хэдийн бүртгэсэн байна.`;
   if (failed) summary += ` ${failed} алдаатай (Console үзнэ үү).`;
   toast(auto ? `Нэхэмжлэл автоматаар: ${summary}` : summary, failed ? 'error' : 'success');
+  if (succeeded > 0) logActivity('invoice', 'accounting', null, `${yearMonth} сарын нэхэмжлэх — ${succeeded} бvртгэгдэв${skipped?`, ${skipped} алгассан`:''}${failed?`, ${failed} алдаатай`:''}`);
   invoiceExcludedIds.clear();
   if (typeof renderInvoiceTab === 'function') renderInvoiceTab();
   // ⚠️ 2026-07-20: Мэдэгдэл илгээх үйлдлийг ЭНДЭЭС ТУСГААРЛАВ — "Журналд
