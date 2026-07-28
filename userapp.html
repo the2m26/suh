@@ -524,11 +524,11 @@ const REAL_MODULES = [
   {key:'elevator',      page:'elevator',      label:'ЛИФТ ДУУДАХ'},
   {key:'polls',         page:'polls',         label:'СОНГУУЛЬ, САНАЛ АСУУЛГА'},
   {key:'camera',        page:'camera',        label:'КАМЕР ХАРАХ'},
-  {key:'call-log',      page:'call-log',      label:'САНАЛ, ХүСЭЛТ, ДУУДЛАГА'},
-  {key:'fintax',        page:'fintax',        label:'САНХүү, ТАТВАРЫН ТАЙЛАН'},
+  {key:'call-log',      page:'call-log',      label:'САНАЛ, ХҮСЭЛТ, ДУУДЛАГА'},
+  {key:'fintax',        page:'fintax',        label:'САНХҮҮ, ТАТВАРЫН ТАЙЛАН'},
   // 2026-07-27: хуучин загварын, userapp.html-д бодитоор ажилладаг тайлууд —
   // устгаагүй, шинэ 8 гол тайлын дараа үлдээв.
-  {key:'residents',     page:'residents',     label:'СУУЦ ӨМЧЛӨГЧИЙН БүРТГЭЛ'},
+  {key:'residents',     page:'residents',     label:'СУУЦ ӨМЧЛӨГЧИЙН БҮРТГЭЛ'},
   {key:'apartments',    page:'apartments',    label:'ТООТ, ЗОГСООЛ, АГУУЛАХ'},
   {key:'payments',      page:'payments',      label:'ТӨЛБӨР ТӨЛӨЛТ'},
   {key:'reports',       page:'reports',       label:'СӨХ ДОТООД ТАЙЛАН'},
@@ -1480,7 +1480,7 @@ function closeContentPage() {
   document.getElementById('contentPage').classList.remove('open');
   currentOpenPageKey = null;
   // ⚠️ 2026-07-27 засав: Буцах сум дарахад доод tab bar-ийн идэвхтэй заалт
-  // (Home) шинэчлэгддэггvй байсан тул, Profile/Тölбор-оос буцаад ирэхэд
+  // (Home) шинэчлэгддэггvй байсан тул, Profile/Төлбөр-оос буцаад ирэхэд
   // тэдгээр товч хvлээгдэлгvйгээр "идэвхтэй" харагдсаар vлддэг байв.
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   const homeBtn = document.querySelector('.tab-btn[data-idx="0"]');
@@ -1489,14 +1489,14 @@ function closeContentPage() {
   if (ind) ind.style.transform = 'translateX(0%)';
 }
 
-// 2026-07-27 нэмэв — доод "Тölбор" tab: зөвхөн ӨӨРИЙН тоотын төлбөрийн
+// 2026-07-27 нэмэв — доод "Төлбөр" tab: зөвхөн ӨӨРИЙН тоотын төлбөрийн
 // задаргаа, тvvх, QPay төлөх товчийг харуулна (residents.js-ийн
 // renderMobileResidentDetail()-той адил engine, зөвхөн identity мэдээллийг
 // хассан — тэр Profile хуудсанд байна).
 async function openMobileMyPaymentPage() {
   currentOpenPageKey = 'my-payment';
   document.getElementById('contentPage').classList.add('open');
-  document.getElementById('contentTitle').textContent = 'Тölбор';
+  document.getElementById('contentTitle').textContent = 'Төлбөр';
   const body = document.getElementById('contentBody');
   body.innerHTML = '<div class="pool-empty">Ачаалж байна...</div>';
   if (currentProfile.role !== 'ot' || !currentProfile.apt) {
