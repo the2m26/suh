@@ -4478,7 +4478,6 @@ where category='invoice' and sent_at >= 'YYYY-MM-01' and sent_at < 'дараа �
       <div class="form-group">
         <label>Роль</label>
         <select id="new-user-role" onchange="onNewUserRoleChange()">
-          <option value="vw">Зочин</option>
           <option value="mn">Менежер</option>
           <option value="nb">Нягтлан бодогч</option>
           <option value="gz">Гүйцэтгэх захирал</option>
@@ -4527,7 +4526,6 @@ where category='invoice' and sent_at >= 'YYYY-MM-01' and sent_at < 'дараа �
       <div class="form-group">
         <label>Роль</label>
         <select id="edit-user-role" onchange="onEditUserRoleChange()">
-          <option value="vw">Зочин</option>
           <option value="mn">Менежер</option>
           <option value="nb">Нягтлан бодогч</option>
           <option value="gz">Гүйцэтгэх захирал</option>
@@ -5496,7 +5494,6 @@ const AUTH_ROLES = [
   {key:'gz',           label:'Гүйцэтгэх захирал'},
   {key:'nb',           label:'Нягтлан бодогч'},
   {key:'mn',           label:'Менежер'},
-  {key:'vw',           label:'Зочин'},
   {key:'ot',           label:'Сууц өмчлөгч'},
 ];
 // ⚠️ 2026-07-17: Эрхийн тохиргоог "10 нэгдсэн үйлдэл" (бүх модульд адилхан харагдана)
@@ -5636,10 +5633,8 @@ function renderAuthLevelsPage() {
       ${AUTH_ROLES.map(role => {
         // Сууц өмчлөгч: зөвхөн "Харах"-д 3 сонголт (1/2/3), бусад бүх үйлдэлд эрх
         // ЯГ 2 (Үгүй) дээр түгжигдмэл — сонгох боломжгүй (тогтмол).
-        // Зочин: "Харах"-д 2 сонголт (1/2), бусад бүх үйлдэлд мөн адил 2 дээр түгжигдмэл.
         const isResident = role.key === 'ot';
-        const isGuest = role.key === 'vw';
-        const lockedToNo = (isResident || isGuest) && actionKey !== 'view';
+        const lockedToNo = isResident && actionKey !== 'view';
         if(lockedToNo || !isRelevant) {
           const val = lockedToNo ? 2 : ((moduleData[role.key]?.[actionKey]) || 2);
           return `<td style="text-align:center">
@@ -5673,12 +5668,11 @@ async function saveAuthLevels() {
   const rows = [];
   AUTH_ROLES.forEach(role=>{
     const isResident = role.key === 'ot';
-    const isGuest = role.key === 'vw';
     AUTH_ACTIONS.forEach(actionKey=>{
-      // Сууц өмчлөгч/Зочин ролийн "Харах"-аас бусад бүх үйлдэл ЯГ 2 (Үгүй)
-      // дээр тогтмол бичигдэнэ — UI дээр сонгох боломжгүй байсан ч, DB-д зөв
+      // Сууц өмчлөгчийн "Харах"-аас бусад бүх үйлдэл ЯГ 2 (Үгүй) дээр
+      // тогтмол бичигдэнэ — UI дээр сонгох боломжгүй байсан ч, DB-д зөв
       // (хатуу хориглосон) утга байх ёстой.
-      const lockedToNo = (isResident || isGuest) && actionKey !== 'view';
+      const lockedToNo = isResident && actionKey !== 'view';
       const level = lockedToNo ? 2 : (moduleData[role.key]?.[actionKey] || 2);
       rows.push({
         role: role.key, resource: currentAuthModule, action: actionKey,
@@ -5692,7 +5686,7 @@ async function saveAuthLevels() {
   logActivity('edit', 'auth_levels', null, `${AUTH_MODULES.find(m=>m.key===currentAuthModule)?.label || currentAuthModule} модулийн эрх өөрчлөгдөв`);
   // Өөрийн эрхийг шинэчлэх (одоо нэвтэрсэн хэрэглэгчийн UI-д шууд тусгагдана)
   await loadMyPermissions();
-  applyNavByRole(currentProfile?.role || 'vw');
+  applyNavByRole(currentProfile?.role || null);
   applyWritePermissionsToUI();
 }
 function resetAuthLevels() {
@@ -5706,7 +5700,7 @@ function resetAuthLevels() {
 const ROLE_LABELS = {
   admin:'Админ', uz:'Удирдах зөвлөл', hz:'Хяналтын зөвлөл',
   gz:'Гүйцэтгэх захирал', nb:'Нягтлан бодогч',
-  mn:'Менежер', vw:'Зочин', ot:'Сууц өмчлөгч'
+  mn:'Менежер', ot:'Сууц өмчлөгч'
 };
 // Зөвхөн admin-д харагдах nav items
 const ADMIN_ONLY_PAGES = ['admin', 'tariff-settings', 'market-valuation', 'auth_levels', 'users', 'nbb-settings', 'asset-settings', 'sokh-settings', 'app-settings', 'activity-log'];
@@ -5779,7 +5773,16 @@ async function doLogin() {
   currentUser = data.user;
   await loadUserProfile();
 
-  if(currentProfile && currentProfile.active === false) {
+  // ⚠️ loadUserProfile() дотор аль хэдийн sign-out хийгдсэн байж болно
+  // (профайл олдоогүй эсвэл role='ot') — тэр тохиолдолд энд цааш үргэлжлэхгүй.
+  if(!currentProfile) {
+    currentUser = null;
+    btn.style.display = 'block';
+    loadEl.style.display = 'none';
+    return;
+  }
+
+  if(currentProfile.active === false) {
     await sb.auth.signOut();
     currentUser = null;
     currentProfile = null;
@@ -5812,11 +5815,28 @@ async function loadUserProfile() {
   if(!currentUser) return;
   const {data, error} = await sb.from('user_profiles').select('*').eq('id', currentUser.id).single();
   if(error || !data) {
-    // Profile байхгүй бол үw роль өгнө
-    currentProfile = {id: currentUser.id, role:'vw', full_name: currentUser.email, active:true};
-  } else {
-    currentProfile = data;
+    // ⚠️ 2026-07-30: Профайл олдохгүй бол ямар ч роль (өмнө нь 'vw'/Зочин)
+    // ТОХООХГҮЙ — роль тодорхойгүй хэрэглэгчийг найдваргүй гэж үзэж шууд гаргана.
+    currentProfile = null;
+    alert('Таны хэрэглэгчийн профайл олдсонгүй. Админтай холбогдоно уу.');
+    await sb.auth.signOut();
+    location.reload();
+    return;
   }
+  // ⚠️ 2026-07-30: Хандах эрхийн бодлого — Сууц өмчлөгч (role='ot') suh.html руу
+  // ХЭЗЭЭ Ч нэвтрэхгүй, зөвхөн userapp-react ашиглана (v8-ийн үеийн нарийн
+  // хүрээтэй RPC-үүд resident-ийг дотоод санхүүгийн мэдээллээс тусгаарласан
+  // тул suh.html руу нэвтрэх шаардлагагүй болсон). role_permissions-ийн
+  // role='ot' мөрүүд ХЭВЭЭРЭЭ — тэдгээр нь userapp-react-ийн
+  // get_my_permissions()-д ашиглагддаг тул ЭНД хамаагүй.
+  if(data.role === 'ot') {
+    currentProfile = null;
+    alert('Энэ систем зөвхөн ажилтанд зориулагдсан. Сууц өмчлөгчид зориулсан аппыг ашиглана уу.');
+    await sb.auth.signOut();
+    location.reload();
+    return;
+  }
+  currentProfile = data;
 }
 // Нэвтэрсний дараах үйлдэл
 // ============================================================
@@ -5845,7 +5865,7 @@ function startPresenceTracking() {
     if(status === 'SUBSCRIBED') {
       await presenceChannel.track({
         full_name: currentProfile?.full_name || currentUser?.email || 'Нэргүй',
-        role: currentProfile?.role || 'vw',
+        role: currentProfile?.role || null,
         page: 'dashboard'
       });
     }
@@ -5857,7 +5877,7 @@ function updatePresencePage(pageName) {
   if(!presenceChannel) return;
   presenceChannel.track({
     full_name: currentProfile?.full_name || currentUser?.email || 'Нэргүй',
-    role: currentProfile?.role || 'vw',
+    role: currentProfile?.role || null,
     page: pageName
   });
 }
@@ -5867,7 +5887,7 @@ async function onLoginSuccess() {
   document.getElementById('login-overlay').style.display = 'none';
 
   // Sidebar хэрэглэгчийн мэдээлэл харуулах
-  const role = currentProfile?.role || 'vw';
+  const role = currentProfile?.role || null;
   const name = currentProfile?.full_name || currentUser?.email || '';
   document.getElementById('current-user-name').textContent = name;
   document.getElementById('current-user-role').textContent = ROLE_LABELS[role] || role;
@@ -5913,7 +5933,7 @@ function applyNavByRole(role) {
 }
 // Хуудас хандах эрх шалгах
 function canAccessPage(pageName) {
-  const role = currentProfile?.role || 'vw';
+  const role = currentProfile?.role || null;
   if(role === 'admin') return true;
   if(ADMIN_ONLY_PAGES.includes(pageName)) return false;
   const moduleDef = AUTH_MODULES.find(m => m.page === pageName);
@@ -6008,7 +6028,10 @@ async function checkExistingSession() {
   if(session) {
     currentUser = session.user;
     await loadUserProfile();
-    if(currentProfile && currentProfile.active === false) {
+    // ⚠️ loadUserProfile() дотор аль хэдийн sign-out хийгдсэн байж болно
+    // (профайл олдоогүй эсвэл role='ot') — тэр тохиолдолд энд цааш үргэлжлэхгүй.
+    if(!currentProfile) { currentUser = null; return; }
+    if(currentProfile.active === false) {
       await sb.auth.signOut();
       currentUser = null;
       currentProfile = null;
@@ -6119,7 +6142,7 @@ function openAddUser() {
   document.getElementById('new-user-name').value = '';
   document.getElementById('new-user-email').value = '';
   document.getElementById('new-user-password').value = '';
-  document.getElementById('new-user-role').value = 'vw';
+  document.getElementById('new-user-role').value = 'mn';
   document.getElementById('new-user-apt').value = '';
   hideResidentSuggestions();
   openModal('modal-add-user');
