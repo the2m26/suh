@@ -119,10 +119,22 @@ export default function Profile({ profile, user, onProfileUpdate }) {
   useEffect(() => {
     loadResident().then(() => setLoading(false));
     (async () => {
-      const { count } = await sb.from('push_subscriptions').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
-      const on = (count || 0) > 0;
-      setPushOn(on);
-      if (on) localStorage.setItem('suh_push_enabled', '1'); else localStorage.removeItem('suh_push_enabled');
+      // ⚠️ 2026-07-30 засав: Үүний өмнө DB дэх push_subscriptions мөрийн ТООГ
+      // шалгадаг байсан — энэ нь ТУХАЙН хэрэглэгчийн БүХ (хэдэн ч байсан)
+      // төхөөрөмжийг нэгтгэж үзнэ, тул нэг төхөөрөмж дээр л зөвшөөрсөн байсан
+      // ч БүХ өөр төхөөрөмж дээр toggle "худал ON" харагддаг байсан. Одоо
+      // ЯГ ЭНЭ browser/төхөөрөмжийн бодит зөвшөөрөл+бүртгэлийг шалгана.
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+        setPushOn(false);
+        return;
+      }
+      try {
+        const reg = _swRegistration || await registerServiceWorker();
+        const sub = reg && await reg.pushManager.getSubscription();
+        setPushOn(!!sub);
+      } catch (e) {
+        setPushOn(false);
+      }
     })();
   }, [profile.apt]);
 

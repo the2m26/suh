@@ -190,19 +190,30 @@ export default function Dashboard() {
 
       {mvRows.length > 0 && (
         <>
-          <div className="section-title">Хотхоны зах зээлийн үнэлгээ (Сүүлийн 12 сараар)</div>
+          <div className="section-title">Хотхоны зах зээлийн бодит үнэлгээ (Сүүлийн 12 сараар)</div>
           {mvCards.map((c, ci) => {
             const series = c.fields.map((f, i) => ({ values: mvLast12.map(r => +r[f] || 0), color: MV_COLORS[i] }));
+            const isSingleField = c.fields.length === 1;
             return (
               <div className="mobile-list-item" key={ci} style={{ marginBottom: 8 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>{c.title}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
                   {c.fields.map((f, i) => {
-                    const lastVal = series[i].values[series[i].values.length - 1] || 0;
+                    const vals = series[i].values;
+                    const lastVal = vals[vals.length - 1] || 0;
+                    const prevVal = vals.length > 1 ? vals[vals.length - 2] : null;
+                    const change = (prevVal != null && prevVal !== 0) ? ((lastVal - prevVal) / prevVal * 100) : null;
+                    const changeUp = change != null && change >= 0;
                     return (
                       <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: 'var(--text-secondary)' }}>
                         <span style={{ width: 7, height: 7, borderRadius: '50%', background: MV_COLORS[i], display: 'inline-block' }} />
-                        {c.labels[i]}: <b style={{ color: 'var(--text-primary)' }}>{lastVal.toLocaleString()}₮</b>
+                        {!isSingleField && <>{c.labels[i]}: </>}
+                        <b style={{ color: 'var(--text-primary)', fontSize: isSingleField ? 18 : undefined }}>{lastVal.toLocaleString()}₮</b>
+                        {change != null && (
+                          <span style={{ color: changeUp ? 'var(--success)' : 'var(--danger)', fontWeight: 600, fontSize: 11 }}>
+                            {changeUp ? '▲' : '▼'} {Math.abs(change).toFixed(1)}%
+                          </span>
+                        )}
                       </span>
                     );
                   })}

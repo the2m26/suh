@@ -53,7 +53,7 @@ export default function Payment({ profile }) {
       </div>
 
       <button className="login-btn" style={{ marginTop: 10 }} onClick={() => setShowQpay(true)}>
-        💳 QPay-аар төлөх
+        QPay-аар төлөх
       </button>
 
       <div className="section-title">Төлбөр төлөлтийн түүх</div>
