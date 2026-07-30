@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { sb } from '../lib/supabase';
 
 const MV_COLORS = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899'];
@@ -53,21 +53,45 @@ function smoothPath(coords) {
 }
 
 // Зөөлөн муруй + маркер бүрт tooltip + сарын (Jan/Feb/...) тэнхлэг
-function MultiSparkline({ series, rows, width = 350, height = 150 }) {
-  const [tip, setTip] = useState(null); // { x, y, text }
+// ⚠️ 2026-07-30 засав: viewBox-ыг ХАТУУ (350x150) тогтмол тоогоор өгдөг
+// байснаас, дэлгэцний бодит өргөн өөрчлөгдөхөд (preserveAspectRatio="none"
+// үед) дугуй маркер зууван, муруй хэвтээ чиглэлд сунадаг гажиг гарч байсан.
+// Эх код (suh.html-ийн mvRenderChartInto) container-ийн БОДИТ өргөнийг
+// хэмжиж, viewBox-оо яг тэр хэмжээгээр үүсгэдэг байсан — ЯГ тэгж засав
+// (ResizeObserver-оор бодит өргөнийг хянана, sunах/гажих боломжгүй болно).
+const CHART_ASPECT_H = 150, CHART_ASPECT_W = 350; // харьцаа хадгалагдана, бодит px өөр байж болно
+
+function MultiSparkline({ series, rows }) {
+  const containerRef = useRef(null);
+  const [measuredWidth, setMeasuredWidth] = useState(CHART_ASPECT_W);
+  const [tip, setTip] = useState(null); // { x, y, text, color }
   const allVals = series.flatMap(s => s.values);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const el = containerRef.current;
+    const update = () => { if (el.clientWidth) setMeasuredWidth(el.clientWidth); };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   if (!allVals.length) return null;
+
+  const width = measuredWidth;
+  const height = Math.round(width * CHART_ASPECT_H / CHART_ASPECT_W);
   const axisH = 16;
   const chartH = height - axisH;
 
-  function showTip(e, text) {
+  function showTip(e, text, color) {
     const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
-    setTip({ x: e.clientX - rect.left, y: e.clientY - rect.top, text });
+    setTip({ x: e.clientX - rect.left, y: e.clientY - rect.top, text, color });
   }
 
   return (
-    <div style={{ position: 'relative' }}>
-      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ display: 'block', overflow: 'visible' }}>
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: 'block', overflow: 'visible' }}>
         <line x1="4" y1={chartH - 2} x2={width - 4} y2={chartH - 2} stroke="var(--border-card)" strokeWidth="1" />
         {series.map((s, si) => {
           const coords = computeCoords(s.values, width, chartH, 4, 10, 4);
@@ -82,8 +106,8 @@ function MultiSparkline({ series, rows, width = 350, height = 150 }) {
                   <g key={c.i}>
                     <circle cx={c.x} cy={c.y} r={1.5} fill={s.color} style={{ pointerEvents: 'none' }} />
                     <circle cx={c.x} cy={c.y} r={7} fill="transparent" style={{ cursor: 'pointer' }}
-                      onMouseEnter={e => showTip(e, text)} onMouseMove={e => showTip(e, text)} onMouseLeave={() => setTip(null)}
-                      onTouchStart={e => showTip(e.touches[0], text)} />
+                      onMouseEnter={e => showTip(e, text, s.color)} onMouseMove={e => showTip(e, text, s.color)} onMouseLeave={() => setTip(null)}
+                      onTouchStart={e => showTip(e.touches[0], text, s.color)} />
                   </g>
                 );
               })}
@@ -99,8 +123,8 @@ function MultiSparkline({ series, rows, width = 350, height = 150 }) {
       {tip && (
         <div style={{
           position: 'absolute', left: Math.min(tip.x + 10, width - 90), top: Math.max(tip.y - 24, 0),
-          background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 6,
-          padding: '3px 8px', fontSize: 11, fontWeight: 600, color: 'var(--text-primary)',
+          background: tip.color + '80', border: `1px solid ${tip.color}`, borderRadius: 6,
+          padding: '3px 8px', fontSize: 11, fontWeight: 700, color: '#fff',
           pointerEvents: 'none', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,.35)', zIndex: 10,
         }}>{tip.text}</div>
       )}

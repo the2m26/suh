@@ -278,7 +278,7 @@ export default function Profile({ profile, user, onProfileUpdate }) {
             </div>
             <div className="profile-card-tint-row">
               <span className="tint-dot tint-dot-solid" />
-              <input type="range" min="0" max="50" value={profile.card_transparency ?? 0} onChange={e => setCardTransparency(+e.target.value)} />
+              <input type="range" min="0" max="90" value={profile.card_transparency ?? 0} onChange={e => setCardTransparency(+e.target.value)} />
               <span className="tint-dot tint-dot-hollow" />
             </div>
           </div>

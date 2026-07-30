@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { sb } from './lib/supabase';
-import { usePullToRefresh } from './lib/usePullToRefresh';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Payment from './components/Payment';
@@ -71,8 +70,6 @@ export default function App() {
   const [openPollId, setOpenPollId] = useState(null);
   const [newsUnread, setNewsUnread] = useState(0);
   const [notifUnread, setNotifUnread] = useState(0);
-  const bodyRef = useRef(null);
-  const pull = usePullToRefresh(bodyRef, () => window.location.reload());
 
   // PWA badge — мэдээ + мэдэгдлийн уншаагүй нийлбэрээр
   useEffect(() => {
@@ -110,7 +107,7 @@ export default function App() {
 
   useEffect(() => {
     const transparency = profile?.card_transparency ?? 0;
-    const alpha = 1 - Math.min(transparency, 50) / 100;
+    const alpha = 1 - Math.min(transparency, 90) / 100;
     const [r, g, b] = profile?.theme === 'light' ? [255, 255, 255] : [22, 36, 64];
     document.documentElement.style.setProperty('--card-bg-computed', `rgba(${r},${g},${b},${alpha})`);
   }, [profile?.card_transparency, profile?.theme]);
@@ -215,12 +212,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="content-body" ref={bodyRef} style={{ transform: pull > 0 ? `translateY(${pull}px)` : undefined }}>
-        {pull > 0 && (
-          <div className="pull-refresh-indicator" style={{ opacity: Math.min(pull / 70, 1) }}>
-            {pull > 70 ? '↻ Суллаад дахин ачаална' : '↓ Доош шүүрч дахин ачаална'}
-          </div>
-        )}
+      <div className="content-body">
         {mainContent}
       </div>
 
