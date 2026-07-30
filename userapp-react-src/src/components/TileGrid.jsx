@@ -10,10 +10,10 @@ const REAL_MODULES = [
   { key: 'polls', label: 'СОНГУУЛЬ, САНАЛ АСУУЛГА' },
   { key: 'elevator', label: 'ЛИФТ ДУУДАХ' },
   { key: 'camera', label: 'КАМЕР ХАРАХ' },
-  { key: 'call-log', label: 'СӨХ-Д САНАЛ ХүСЭЛТ ИЛГЭЭХ' },
+  { key: 'call-log', label: 'СӨХ-Д САНАЛ ХҮСЭЛТ ИЛГЭЭХ' },
   { key: 'useful-contacts', label: 'СӨХ-НЫ ХАЯГ, УТАС, МЭЙЛ, ДАНС' },
   { key: 'emergency-contacts', label: 'ОНЦГОЙ ХЭРЭГЦЭЭТ УТАСНЫ ДУГААРУУД' },
-  { key: 'call-service', label: 'ТӨЛБӨРТ үЙЛЧИЛГЭЭ' },
+  { key: 'call-service', label: 'ТӨЛБӨРТ ҮЙЛЧИЛГЭЭ' },
 ];
 const HIDDEN_TILES_KEY = 'suh_hidden_tiles';
 function getHiddenTiles() {

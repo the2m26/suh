@@ -87,7 +87,7 @@ function PollDetail({ pollId, profile }) {
   if (loading) return <div className="pool-empty">Ачаалж байна...</div>;
 
   return (
-    <div>
+    <div className="mobile-list-item">
       <h2 className="poll-title">{poll?.title || ''}</h2>
       {profile.role !== 'ot'
         ? <div className="pool-empty">Санал өгөх боломж зөвхөн Сууц өмчлөгч ролид байна.</div>

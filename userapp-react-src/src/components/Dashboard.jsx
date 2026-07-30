@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { sb } from '../lib/supabase';
 
 const MV_COLORS = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899'];
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function BarChart({ incomeArr, expenseArr, width = 340, height = 70 }) {
   const max = Math.max(...incomeArr, ...expenseArr, 1);
@@ -16,19 +17,94 @@ function BarChart({ incomeArr, expenseArr, width = 340, height = 70 }) {
   return <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }}>{bars}</svg>;
 }
 
-function MultiSparkline({ series, width = 350, height = 140 }) {
+// ⚠️ 2026-07-30: suh.html-ийн market-valuation.js-ийн mvComputeCoords/
+// mvSmoothPathFromCoords/mvSparklineSVG-той ЯГ ИЖИЛ Catmull-Rom smooth path
+// томъёог React руу шилжүүлэв (v8-д зөвхөн шулуун polyline байсан, зөөлөн
+// муруй/tooltip/сарын тэнхлэг бүгд дутуу байсан).
+function computeCoords(values, w, h, pad = 4, padTop = 10, padBottom = 4) {
+  const pts = [];
+  const n = values.length;
+  values.forEach((v, i) => { if (v != null && !isNaN(v)) pts.push({ i, v }); });
+  if (!pts.length) return [];
+  const valid = pts.map(p => p.v);
+  const min = Math.min(...valid), max = Math.max(...valid);
+  const range = (max - min) || 1;
+  return pts.map(p => ({
+    i: p.i, v: p.v,
+    x: pad + (p.i / Math.max(n - 1, 1)) * (w - 2 * pad),
+    y: h - padBottom - ((p.v - min) / range) * (h - padTop - padBottom),
+  }));
+}
+function smoothPath(coords) {
+  if (!coords.length) return '';
+  if (coords.length === 1) return `M${coords[0].x.toFixed(1)},${coords[0].y.toFixed(1)}`;
+  if (coords.length === 2) return `M${coords[0].x.toFixed(1)},${coords[0].y.toFixed(1)} L${coords[1].x.toFixed(1)},${coords[1].y.toFixed(1)}`;
+  let d = `M${coords[0].x.toFixed(1)},${coords[0].y.toFixed(1)}`;
+  for (let i = 0; i < coords.length - 1; i++) {
+    const p0 = coords[i - 1] || coords[i];
+    const p1 = coords[i];
+    const p2 = coords[i + 1];
+    const p3 = coords[i + 2] || p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6, cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6, cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
+// Зөөлөн муруй + маркер бүрт tooltip + сарын (Jan/Feb/...) тэнхлэг
+function MultiSparkline({ series, rows, width = 350, height = 150 }) {
+  const [tip, setTip] = useState(null); // { x, y, text }
   const allVals = series.flatMap(s => s.values);
   if (!allVals.length) return null;
-  const max = Math.max(...allVals, 1), min = Math.min(...allVals, 0);
-  const range = (max - min) || 1;
+  const axisH = 16;
+  const chartH = height - axisH;
+
+  function showTip(e, text) {
+    const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+    setTip({ x: e.clientX - rect.left, y: e.clientY - rect.top, text });
+  }
+
   return (
-    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }}>
-      {series.map((s, si) => {
-        const step = width / Math.max(s.values.length - 1, 1);
-        const pts = s.values.map((v, i) => `${(i * step).toFixed(1)},${(height - ((v - min) / range) * height).toFixed(1)}`).join(' ');
-        return <polyline key={si} points={pts} fill="none" stroke={s.color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />;
-      })}
-    </svg>
+    <div style={{ position: 'relative' }}>
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ display: 'block', overflow: 'visible' }}>
+        <line x1="4" y1={chartH - 2} x2={width - 4} y2={chartH - 2} stroke="var(--border-card)" strokeWidth="1" />
+        {series.map((s, si) => {
+          const coords = computeCoords(s.values, width, chartH, 4, 10, 4);
+          const d = smoothPath(coords);
+          return (
+            <g key={si}>
+              {d && <path d={d} fill="none" stroke={s.color} strokeWidth={0.5} strokeLinecap="round" strokeLinejoin="round" />}
+              {coords.map(c => {
+                const monthLabel = rows?.[c.i] ? MONTH_ABBR[(rows[c.i].month || 1) - 1] : '';
+                const text = `${monthLabel}: ${c.v.toLocaleString()}₮`;
+                return (
+                  <g key={c.i}>
+                    <circle cx={c.x} cy={c.y} r={1.5} fill={s.color} style={{ pointerEvents: 'none' }} />
+                    <circle cx={c.x} cy={c.y} r={7} fill="transparent" style={{ cursor: 'pointer' }}
+                      onMouseEnter={e => showTip(e, text)} onMouseMove={e => showTip(e, text)} onMouseLeave={() => setTip(null)}
+                      onTouchStart={e => showTip(e.touches[0], text)} />
+                  </g>
+                );
+              })}
+            </g>
+          );
+        })}
+        {rows && rows.length > 0 && rows.map((r, i) => {
+          const n = rows.length;
+          const x = 4 + (i / Math.max(n - 1, 1)) * (width - 8);
+          return <text key={i} x={x} y={height - 3} fontSize="7" fill="var(--text-secondary)" textAnchor="middle">{MONTH_ABBR[(r.month || 1) - 1]}</text>;
+        })}
+      </svg>
+      {tip && (
+        <div style={{
+          position: 'absolute', left: Math.min(tip.x + 10, width - 90), top: Math.max(tip.y - 24, 0),
+          background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 6,
+          padding: '3px 8px', fontSize: 11, fontWeight: 600, color: 'var(--text-primary)',
+          pointerEvents: 'none', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,.35)', zIndex: 10,
+        }}>{tip.text}</div>
+      )}
+    </div>
   );
 }
 
@@ -61,6 +137,7 @@ export default function Dashboard() {
   const incomeByMonth = (data.income_by_month || Array(12).fill(0)).map(Number);
   const expenseByMonth = (data.expense_by_month || Array(12).fill(0)).map(Number);
   const curYear = new Date().getFullYear();
+  const mvLast12 = mvRows.slice(-12);
 
   const mvCards = [
     { title: 'Орон сууц (₮/м²)', fields: ['apartment_sale'], labels: ['Орон сууц'] },
@@ -89,9 +166,9 @@ export default function Dashboard() {
 
       {mvRows.length > 0 && (
         <>
-          <div className="section-title">Хотхоны зах зээлийн чиг хандлага (Сүүлийн 12 сар)</div>
+          <div className="section-title">Хотхоны зах зээлийн үнэлгээ (Сүүлийн 12 сараар)</div>
           {mvCards.map((c, ci) => {
-            const series = c.fields.map((f, i) => ({ values: mvRows.map(r => +r[f] || 0), color: MV_COLORS[i] }));
+            const series = c.fields.map((f, i) => ({ values: mvLast12.map(r => +r[f] || 0), color: MV_COLORS[i] }));
             return (
               <div className="mobile-list-item" key={ci} style={{ marginBottom: 8 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>{c.title}</div>
@@ -101,12 +178,12 @@ export default function Dashboard() {
                     return (
                       <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: 'var(--text-secondary)' }}>
                         <span style={{ width: 7, height: 7, borderRadius: '50%', background: MV_COLORS[i], display: 'inline-block' }} />
-                        {c.labels[i]}: <b style={{ color: '#fff' }}>{lastVal.toLocaleString()}₮</b>
+                        {c.labels[i]}: <b style={{ color: 'var(--text-primary)' }}>{lastVal.toLocaleString()}₮</b>
                       </span>
                     );
                   })}
                 </div>
-                <MultiSparkline series={series} />
+                <MultiSparkline series={series} rows={mvLast12} />
               </div>
             );
           })}

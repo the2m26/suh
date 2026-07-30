@@ -98,11 +98,31 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', profile?.theme || 'dark');
   }, [profile?.theme]);
 
+  // ⚠️ 2026-07-30 засав: эх кодоос яг тааруулав — CSS хүлээж байгаа хувьсагчийн
+  // нэр (--card-tint-overlay/--card-bg-computed) өмнө нь буруу байсан (нэг
+  // useEffect-д хольж, --card-tint-computed гэсэн БУРУУ нэрээр бичсэн байснаас
+  // 2 слайдер аль аль нь ажиллахгүй болсон байсан).
   useEffect(() => {
     const tint = profile?.card_tint ?? 0;
-    const rgba = tint < 0 ? `rgba(0,0,0,${Math.min(-tint, 50) / 100})` : `rgba(255,255,255,${Math.min(tint, 50) / 100})`;
-    document.documentElement.style.setProperty('--card-tint-computed', rgba);
+    const overlay = tint < 0 ? `rgba(0,0,0,${Math.min(-tint, 50) / 100})` : `rgba(255,255,255,${Math.min(tint, 50) / 100})`;
+    document.documentElement.style.setProperty('--card-tint-overlay', overlay);
+  }, [profile?.card_tint]);
+
+  useEffect(() => {
+    const transparency = profile?.card_transparency ?? 0;
+    const alpha = 1 - Math.min(transparency, 50) / 100;
+    const [r, g, b] = profile?.theme === 'light' ? [255, 255, 255] : [22, 36, 64];
+    document.documentElement.style.setProperty('--card-bg-computed', `rgba(${r},${g},${b},${alpha})`);
   }, [profile?.card_transparency, profile?.theme]);
+
+  // ⚠️ 2026-07-30 шинээр нэмэв: дэвсгэр (bg_image/bg_color)-ийг харлуулах/
+  // цайруулах слайдер — дээрх card_tint-тэй ЯГ ИЖИЛ томъёогоор, гэхдээ
+  // .app-bg-layer-ийн overlay-д зориулагдсан.
+  useEffect(() => {
+    const tint = profile?.bg_tint ?? 0;
+    const overlay = tint < 0 ? `rgba(0,0,0,${Math.min(-tint, 50) / 100})` : `rgba(255,255,255,${Math.min(tint, 50) / 100})`;
+    document.documentElement.style.setProperty('--bg-tint-overlay', overlay);
+  }, [profile?.bg_tint]);
 
   // Шинэ мэдээ уншаагүй тоог 1 минут тутам шалгана
   useEffect(() => {
@@ -165,8 +185,8 @@ export default function App() {
     <div className="app-shell">
       {(profile.bg_image_url || profile.bg_color) && (
         <div className="app-bg-layer" style={profile.bg_image_url
-          ? { backgroundImage: `url(${profile.bg_image_url})`, filter: `blur(${profile.bg_blur ?? 8}px)` }
-          : { background: profile.bg_color }} />
+          ? { backgroundImage: `linear-gradient(var(--bg-tint-overlay), var(--bg-tint-overlay)), url(${profile.bg_image_url})`, filter: `blur(${profile.bg_blur ?? 8}px)` }
+          : { backgroundImage: 'linear-gradient(var(--bg-tint-overlay), var(--bg-tint-overlay))', backgroundColor: profile.bg_color }} />
       )}
 
       {pageTitle ? (

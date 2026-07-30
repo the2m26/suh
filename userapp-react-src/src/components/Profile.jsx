@@ -149,6 +149,7 @@ export default function Profile({ profile, user, onProfileUpdate }) {
       p_bg_color: next.bg_color ?? null,
       p_card_tint: next.card_tint ?? 0,
       p_card_transparency: next.card_transparency ?? 0,
+      p_bg_tint: next.bg_tint ?? 0,
     });
     if (error) { alert('Хадгалахад алдаа гарлаа: ' + error.message); return; }
     onProfileUpdate(next);
@@ -165,6 +166,7 @@ export default function Profile({ profile, user, onProfileUpdate }) {
   }
   async function pickColor(hex) { await savePrefs({ bg_color: hex, bg_image_url: null }); }
   async function setBlur(v) { await savePrefs({ bg_blur: v }); }
+  async function setBgTint(v) { await savePrefs({ bg_tint: v }); }
   async function setCardTint(v) { await savePrefs({ card_tint: v }); }
   async function setCardTransparency(v) { await savePrefs({ card_transparency: v }); }
   async function removeBackground() { await savePrefs({ bg_image_url: null, bg_color: null }); }
@@ -253,13 +255,21 @@ export default function Profile({ profile, user, onProfileUpdate }) {
               </button>
             </div>
             {profile.bg_image_url && (
-              <div className="profile-bg-blur-row">
-                <span>Блүр хүч</span>
+              <div className="profile-card-tint-row">
+                <span className="tint-dot tint-dot-sharp" />
                 <input type="range" min="0" max="20" value={profile.bg_blur ?? 8} onChange={e => setBlur(+e.target.value)} />
+                <span className="tint-dot tint-dot-blurred" />
               </div>
             )}
             {(profile.bg_image_url || profile.bg_color) && (
               <button className="profile-bg-remove-btn" onClick={removeBackground}>Дэвсгэрийг арилгах</button>
+            )}
+            {(profile.bg_image_url || profile.bg_color) && (
+              <div className="profile-card-tint-row">
+                <span className="tint-dot tint-dot-black" />
+                <input type="range" min="-50" max="50" value={profile.bg_tint ?? 0} onChange={e => setBgTint(+e.target.value)} />
+                <span className="tint-dot tint-dot-white" />
+              </div>
             )}
             <div className="profile-card-tint-row">
               <span className="tint-dot tint-dot-black" />
