@@ -1,17 +1,64 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { sb } from './lib/supabase';
-import { shouldShowPushBanner, dismissPushBanner, enablePush } from './lib/push';
+import { usePullToRefresh } from './lib/usePullToRefresh';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Payment from './components/Payment';
 import Profile from './components/Profile';
 import TileGrid from './components/TileGrid';
+import TabBar from './components/TabBar';
+import News from './components/News';
+import Polls from './components/Polls';
+import GuestInvite from './components/GuestInvite';
+import CallLog from './components/CallLog';
+import CallService from './components/CallService';
+import UsefulContacts from './components/UsefulContacts';
+import EmergencyContacts from './components/EmergencyContacts';
+import Inbox from './components/Inbox';
 import './App.css';
 
-// Tile хайрцгаар нээгддэг, бодит хэрэгжилттэй хуудсууд.
+// ⚠️ 2026-07-30: v8 үндэст зөвхөн `dashboard` байсан TILE_PAGES-г бүрэн
+// сэргээв. "elevator"/"camera" TILE_PAGES-д ороогүй тул автоматаар
+// "Энэ модуль удахгүй нэмэгдэнэ" харагдана (гуравдагч үйлчилгээ хүлээгдэж буй).
 const TILE_PAGES = {
   dashboard: { title: 'ХЯНАХ САМБАР', render: () => <Dashboard /> },
+  news: { title: 'МЭДЭЭ, МЭДЭЭЛЭЛ', render: () => <News /> },
 };
+
+const HOME_ICON = (
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.5 11h2.3v9.3h6V15h2.4v5.3h6V11h2.3z" /></svg>
+);
+const PAYMENT_ICON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
+  </svg>
+);
+const PROFILE_ICON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 19a4 4 0 014-3h8a4 4 0 014 3" /><circle cx="12" cy="8" r="4" />
+  </svg>
+);
+const BACK_ICON = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+);
+const BELL_ICON = (
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+    <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+  </svg>
+);
+const PLUS_ICON = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round">
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+const LOGOUT_ICON = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+);
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -19,7 +66,22 @@ export default function App() {
   const [checking, setChecking] = useState(true);
   const [bottomTab, setBottomTab] = useState('home'); // home | payment | profile
   const [openTile, setOpenTile] = useState(null); // { key, label }
-  const [showPushBanner, setShowPushBanner] = useState(false);
+  const [showAddTileModal, setShowAddTileModal] = useState(false);
+  const [showInbox, setShowInbox] = useState(false);
+  const [openPollId, setOpenPollId] = useState(null);
+  const [newsUnread, setNewsUnread] = useState(0);
+  const [notifUnread, setNotifUnread] = useState(0);
+  const bodyRef = useRef(null);
+  const pull = usePullToRefresh(bodyRef, () => window.location.reload());
+
+  // PWA badge — мэдээ + мэдэгдлийн уншаагүй нийлбэрээр
+  useEffect(() => {
+    const total = newsUnread + notifUnread;
+    if ('setAppBadge' in navigator) {
+      if (total > 0) navigator.setAppBadge(total).catch(() => {});
+      else if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
+    }
+  }, [newsUnread, notifUnread]);
 
   useEffect(() => {
     sb.auth.getSession().then(async ({ data }) => {
@@ -33,78 +95,132 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (user) shouldShowPushBanner().then(setShowPushBanner);
+    document.documentElement.setAttribute('data-theme', profile?.theme || 'dark');
+  }, [profile?.theme]);
+
+  useEffect(() => {
+    const tint = profile?.card_tint ?? 0;
+    const rgba = tint < 0 ? `rgba(0,0,0,${Math.min(-tint, 50) / 100})` : `rgba(255,255,255,${Math.min(tint, 50) / 100})`;
+    document.documentElement.style.setProperty('--card-tint-computed', rgba);
+  }, [profile?.card_transparency, profile?.theme]);
+
+  // Шинэ мэдээ уншаагүй тоог 1 минут тутам шалгана
+  useEffect(() => {
+    if (!user) return;
+    async function check() {
+      const { data } = await sb.from('news_posts').select('published_at').eq('status', 'published')
+        .order('published_at', { ascending: false }).limit(50);
+      const lastSeen = localStorage.getItem('suh_news_last_seen');
+      const unseen = (data || []).filter(p => !lastSeen || new Date(p.published_at) > new Date(lastSeen));
+      setNewsUnread(unseen.length);
+    }
+    check();
+    const id = setInterval(check, 60000);
+    return () => clearInterval(id);
+  }, [user]);
+
+  // Шинэ мэдэгдэл уншаагүй тоог 1 минут тутам шалгана
+  useEffect(() => {
+    if (!user) return;
+    async function check() {
+      const { data } = await sb.rpc('get_my_notifications', { p_limit: 50 });
+      const lastSeen = localStorage.getItem('suh_notif_last_seen');
+      const unseen = (data || []).filter(n => !lastSeen || new Date(n.sent_at) > new Date(lastSeen));
+      setNotifUnread(unseen.length);
+    }
+    check();
+    const id = setInterval(check, 60000);
+    return () => clearInterval(id);
   }, [user]);
 
   function handleLoggedIn(u, p) { setUser(u); setProfile(p); }
   async function handleLogout() { await sb.auth.signOut(); setUser(null); setProfile(null); }
-
-  async function handleEnablePush() {
-    const res = await enablePush(user.id);
-    setShowPushBanner(false);
-    if (!res.ok) alert(res.msg);
+  function goHome() { setBottomTab('home'); setOpenTile(null); setOpenPollId(null); }
+  function openTilePage(key, label) {
+    if (key === 'news') { localStorage.setItem('suh_news_last_seen', new Date().toISOString()); setNewsUnread(0); }
+    setOpenTile({ key, label });
+    setOpenPollId(null);
   }
-  function handleDismissPush() { dismissPushBanner(); setShowPushBanner(false); }
-
-  function goHome() { setBottomTab('home'); setOpenTile(null); }
+  function onBack() { openPollId ? setOpenPollId(null) : setOpenTile(null); }
 
   if (checking) return <div className="pool-empty">Ачаалж байна...</div>;
   if (!user) return <Login onLoggedIn={handleLoggedIn} />;
 
   let mainContent;
   if (bottomTab === 'payment') mainContent = <Payment profile={profile} />;
-  else if (bottomTab === 'profile') mainContent = <Profile profile={profile} />;
+  else if (bottomTab === 'profile') mainContent = <Profile profile={profile} user={user} onProfileUpdate={setProfile} />;
+  else if (openTile?.key === 'polls') mainContent = <Polls profile={profile} openPollId={openPollId} onOpenPoll={setOpenPollId} />;
+  else if (openTile?.key === 'guest-invite') mainContent = <GuestInvite profile={profile} />;
+  else if (openTile?.key === 'call-service') mainContent = <CallService />;
+  else if (openTile?.key === 'useful-contacts') mainContent = <UsefulContacts />;
+  else if (openTile?.key === 'emergency-contacts') mainContent = <EmergencyContacts />;
+  else if (openTile?.key === 'call-log') mainContent = <CallLog profile={profile} />;
   else if (openTile && TILE_PAGES[openTile.key]) mainContent = TILE_PAGES[openTile.key].render();
   else if (openTile) mainContent = <div className="pool-empty">Энэ модуль удахгүй нэмэгдэнэ</div>;
-  else mainContent = <TileGrid onOpenTile={(key, label) => setOpenTile({ key, label })} />;
+  else mainContent = <TileGrid onOpenTile={openTilePage} showAddModal={showAddTileModal} onCloseAddModal={() => setShowAddTileModal(false)} newsUnreadCount={newsUnread} />;
 
   const pageTitle = bottomTab === 'payment' ? 'Төлбөр' : bottomTab === 'profile' ? 'Profile' : (openTile ? openTile.label : null);
 
   return (
     <div className="app-shell">
-      {!pageTitle ? (
+      {(profile.bg_image_url || profile.bg_color) && (
+        <div className="app-bg-layer" style={profile.bg_image_url
+          ? { backgroundImage: `url(${profile.bg_image_url})`, filter: `blur(${profile.bg_blur ?? 8}px)` }
+          : { background: profile.bg_color }} />
+      )}
+
+      {pageTitle ? (
+        <div className="content-page-header">
+          {bottomTab === 'home' && <button className="icon-btn" onClick={onBack} aria-label="Буцах">{BACK_ICON}</button>}
+          <div className="content-page-title">{pageTitle}</div>
+        </div>
+      ) : (
         <div className="home-header">
           <div>
             <div className="app-title">СӨХ</div>
             <div className="user-greeting">{profile.full_name || user.email} · Сууц өмчлөгч</div>
           </div>
-        </div>
-      ) : (
-        <div className="content-page-header">
-          <button className="icon-btn" onClick={goHome}>←</button>
-          <div className="content-page-title">{pageTitle}</div>
-        </div>
-      )}
-
-      {showPushBanner && (
-        <div className="mobile-list-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>🔔 Апп хаалттай үед ч шинэ нэхэмжлэл, мэдээ, мэдэгдэл шууд утсанд ирдэг болгох уу?</div>
-          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-            <button className="icon-btn" style={{ padding: '6px 10px', fontSize: 11 }} onClick={handleEnablePush}>Идэвхжүүлэх</button>
-            <button className="icon-btn" style={{ padding: '6px 10px', fontSize: 11 }} onClick={handleDismissPush}>үгүй</button>
+          <div className="header-actions">
+            <button className="icon-btn" aria-label="Мэдэгдэл" onClick={() => {
+              setShowInbox(true);
+              localStorage.setItem('suh_notif_last_seen', new Date().toISOString());
+              setNotifUnread(0);
+            }}>
+              {BELL_ICON}
+              {notifUnread > 0 && <span className="inbox-badge show">{notifUnread}</span>}
+            </button>
+            <button className="icon-btn" aria-label="Нуусан товчоо сэргээх" onClick={() => setShowAddTileModal(true)}>{PLUS_ICON}</button>
+            <button className="icon-btn" aria-label="Гарах" onClick={handleLogout}>{LOGOUT_ICON}</button>
           </div>
         </div>
       )}
 
-      <div className="content-body">{mainContent}</div>
+      <div className="content-body" ref={bodyRef} style={{ transform: pull > 0 ? `translateY(${pull}px)` : undefined }}>
+        {pull > 0 && (
+          <div className="pull-refresh-indicator" style={{ opacity: Math.min(pull / 70, 1) }}>
+            {pull > 70 ? '↻ Суллаад дахин ачаална' : '↓ Доош шүүрч дахин ачаална'}
+          </div>
+        )}
+        {mainContent}
+      </div>
+
+      {showInbox && <Inbox onClose={() => setShowInbox(false)} />}
 
       <div className="tab-bar-wrap">
-        <nav className="tab-bar">
-          <button className={`tab-btn ${bottomTab === 'home' ? 'active' : ''}`} onClick={goHome}>
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.5 11h2.3v9.3h6V15h2.4v5.3h6V11h2.3z"/></svg>
-            Home
-          </button>
-          <button className={`tab-btn ${bottomTab === 'payment' ? 'active' : ''}`} onClick={() => { setBottomTab('payment'); setOpenTile(null); }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-            Төлбөр
-          </button>
-          <button className={`tab-btn ${bottomTab === 'profile' ? 'active' : ''}`} onClick={() => { setBottomTab('profile'); setOpenTile(null); }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19a4 4 0 014-3h8a4 4 0 014 3"/><circle cx="12" cy="8" r="4"/></svg>
-            Profile
-          </button>
-        </nav>
+        <TabBar
+          active={{ home: 0, payment: 1, profile: 2 }[bottomTab]}
+          onChange={i => {
+            const tab = ['home', 'payment', 'profile'][i];
+            if (tab === 'home') goHome();
+            else { setBottomTab(tab); setOpenTile(null); setOpenPollId(null); }
+          }}
+          tabs={[
+            { key: 'home', label: 'Home', icon: HOME_ICON },
+            { key: 'payment', label: 'Төлбөр', icon: PAYMENT_ICON },
+            { key: 'profile', label: 'Profile', icon: PROFILE_ICON },
+          ]}
+        />
       </div>
-      <button className="icon-btn" style={{ position: 'fixed', top: 16, right: 16, zIndex: 95 }} onClick={handleLogout}>Гарах</button>
     </div>
   );
 }
