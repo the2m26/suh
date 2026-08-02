@@ -146,10 +146,7 @@ export default function Profile({ profile, user, onProfileUpdate }) {
 
   async function toggleTheme() {
     const theme = profile.theme === 'light' ? 'dark' : 'light';
-    const { error } = await sb.rpc('update_my_preferences', {
-      p_theme: theme, p_bg_url: profile.bg_image_url ?? null, p_bg_blur: profile.bg_blur ?? 8,
-    });
-    if (!error) onProfileUpdate({ ...profile, theme });
+    await savePrefs({ theme });
   }
 
   async function savePrefs(patch) {
