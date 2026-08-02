@@ -18,9 +18,20 @@ function fmtDay(iso) {
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// ⚠️ 2026-08-02 засав: channel-ийг ганц удаа .on()+.subscribe() хийж, тухайн
+// мөчид идэвхтэй компонентын callback-ыг сольж ("swap") ажиллуулдаг болгов —
+// үүнгүйгээр компонент дахин mount болох бүрд ("cannot add callback after
+// subscribe" алдаа өгдөг байсан.
 let _typingChannel = null;
+let _typingListener = null;
 function _ensureTypingChannel() {
-  if (!_typingChannel) _typingChannel = sb.channel('cc-typing-broadcast');
+  if (!_typingChannel) {
+    _typingChannel = sb.channel('cc-typing-broadcast');
+    _typingChannel.on('broadcast', { event: 'typing' }, (msg) => {
+      if (_typingListener) _typingListener(msg);
+    });
+    _typingChannel.subscribe();
+  }
   return _typingChannel;
 }
 
@@ -78,28 +89,47 @@ export default function CallLog({ profile }) {
   }
 
   useEffect(() => {
+    let ch = null;
+    let cancelled = false;
+
     (async () => {
       const { data: resident } = await sb.from('residents').select('id').eq('apt', profile.apt).maybeSingle();
       const rId = resident?.id || null;
       await loadThread(rId);
+      if (cancelled) return; // компонент unmount/apt солигдсон бол үлдэх ажлыг зогсооно
 
-      const ch = sb.channel('my-cc-thread-live')
+      // ⚠️ 2026-08-02 засав: cleanup функц ӨМНӨ нь async IIFE-ийн ДОТОР
+      // "return" хийгдэж байсан тул React үүнийг хэзээ ч бүртгэдэггүй байсан
+      // (useEffect зөвхөн ГАДНА талын функцээс шууд буцаасан утгыг л cleanup
+      // гэж үздэг). Үүнээс болж channel хэзээ ч цэвэрлэгдэхгүй, effect дахин
+      // ажиллах бүрд ижил нэртэй ("my-cc-thread-live") шинэ channel үүсгэхийг
+      // оролдоод "cannot add callbacks after subscribe()" алдаа өгдөг байсан.
+      ch = sb.channel('my-cc-thread-live')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
           const row = payload.new;
           if (row.source !== 'cc-center' || row.recipient_specific_id !== rId) return;
           setMessages(prev => [...prev, { dir: 'in', text: row.content, at: row.sent_at, sender: row.sender_name }]);
         })
         .subscribe();
-
-      _ensureTypingChannel().on('broadcast', { event: 'typing' }, (msg) => {
-        if (String(msg.payload?.apt) !== String(profile.apt)) return;
-        setStaffTyping(true);
-        clearTimeout(typingHideRef.current);
-        typingHideRef.current = setTimeout(() => setStaffTyping(false), 3000);
-      }).subscribe();
-
-      return () => { sb.removeChannel(ch); };
     })();
+
+    return () => {
+      cancelled = true;
+      if (ch) sb.removeChannel(ch);
+    };
+  }, [profile.apt]);
+
+  // Typing channel модулийн singleton тул зөвхөн "идэвхтэй сонсогч"-оо
+  // солино — .on()/.subscribe() дахин хэзээ ч дуудахгүй.
+  useEffect(() => {
+    _ensureTypingChannel();
+    _typingListener = (msg) => {
+      if (String(msg.payload?.apt) !== String(profile.apt)) return;
+      setStaffTyping(true);
+      clearTimeout(typingHideRef.current);
+      typingHideRef.current = setTimeout(() => setStaffTyping(false), 3000);
+    };
+    return () => { _typingListener = null; };
   }, [profile.apt]);
 
   useEffect(() => {
