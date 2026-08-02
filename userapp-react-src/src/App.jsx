@@ -1,5 +1,17 @@
 import { useEffect, useState } from 'react';
 import { sb } from './lib/supabase';
+
+// hex өнгийг хар/цагаан руу шугаман хольж тодорхой хувиар харлуулах/цайруулах
+function tintHex(hex, tint) {
+  const h = (hex || '#000000').replace('#', '');
+  let r = parseInt(h.substr(0, 2), 16) || 0, g = parseInt(h.substr(2, 2), 16) || 0, b = parseInt(h.substr(4, 2), 16) || 0;
+  const amt = Math.min(Math.abs(tint || 0), 50) / 50;
+  const mixTo = tint < 0 ? 0 : 255;
+  r = Math.round(r + (mixTo - r) * amt);
+  g = Math.round(g + (mixTo - g) * amt);
+  b = Math.round(b + (mixTo - b) * amt);
+  return `rgb(${r},${g},${b})`;
+}
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Payment from './components/Payment';
@@ -112,14 +124,25 @@ export default function App() {
     document.documentElement.style.setProperty('--card-bg-computed', `rgba(${r},${g},${b},${alpha})`);
   }, [profile?.card_transparency, profile?.theme]);
 
-  // ⚠️ 2026-07-30 шинээр нэмэв: дэвсгэр (bg_image/bg_color)-ийг харлуулах/
-  // цайруулах слайдер — дээрх card_tint-тэй ЯГ ИЖИЛ томъёогоор, гэхдээ
-  // .app-bg-layer-ийн overlay-д зориулагдсан.
+  // ⚠️ 2026-08-02 дахин зохион байгуулав: 10 өнгөний сонголт (bg_color)
+  // одоо "overlay давхарга"-аар БИШ, ШУУД глобал --bg-page-г солино
+  // (body-ийн бодит дэвсгэр) — учир нь энэ нь илүү энгийн, урьдчилан
+  // таамаглах боломжтой үр дүнтэй ("картны хүрээ, дэвсгэр өөр өөр
+  // тохиргоотой тул хэвийн, зөвхөн хамгийн ард байх үндсэн өнгийг
+  // сольж байгаа юм"). Зураг сонгосон үед л хуучин overlay арга (blur+tint)
+  // хэвээрээ үлдэнэ (зураг заавал тусдаа давхарга байх ёстой тул).
   useEffect(() => {
     const tint = profile?.bg_tint ?? 0;
-    const overlay = tint < 0 ? `rgba(0,0,0,${Math.min(-tint, 50) / 100})` : `rgba(255,255,255,${Math.min(tint, 50) / 100})`;
-    document.documentElement.style.setProperty('--bg-tint-overlay', overlay);
-  }, [profile?.bg_tint]);
+    if (profile?.bg_image_url) {
+      const overlay = tint < 0 ? `rgba(0,0,0,${Math.min(-tint, 50) / 100})` : `rgba(255,255,255,${Math.min(tint, 50) / 100})`;
+      document.documentElement.style.setProperty('--bg-tint-overlay', overlay);
+      document.documentElement.style.removeProperty('--bg-page');
+    } else if (profile?.bg_color) {
+      document.documentElement.style.setProperty('--bg-page', tintHex(profile.bg_color, tint));
+    } else {
+      document.documentElement.style.removeProperty('--bg-page');
+    }
+  }, [profile?.bg_tint, profile?.bg_color, profile?.bg_image_url]);
 
   // ⚠️ 2026-07-30 нэмэв: "Интерфейс"-ийн картын хүрээний өнгө (0=#000000 —
   // 255=#ffffff саарал хэмжүүр). Утга сонгоогүй үед App.css-ийн стандарт
@@ -193,10 +216,8 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {(profile.bg_image_url || profile.bg_color) && (
-        <div className="app-bg-layer" style={profile.bg_image_url
-          ? { backgroundImage: `linear-gradient(var(--bg-tint-overlay), var(--bg-tint-overlay)), url(${profile.bg_image_url})`, filter: `blur(${profile.bg_blur ?? 8}px)` }
-          : { backgroundImage: 'linear-gradient(var(--bg-tint-overlay), var(--bg-tint-overlay))', backgroundColor: profile.bg_color }} />
+      {profile.bg_image_url && (
+        <div className="app-bg-layer" style={{ backgroundImage: `linear-gradient(var(--bg-tint-overlay), var(--bg-tint-overlay)), url(${profile.bg_image_url})`, filter: `blur(${profile.bg_blur ?? 8}px)` }} />
       )}
 
       {pageTitle ? (
