@@ -131,7 +131,13 @@ export default function CallLog({ profile }) {
     : { position: 'relative', height: '60vh' }; // хэмжигдэхээс өмнөх түр байдал
 
   return (
-    <div style={{ ...style, display: 'flex', flexDirection: 'column', padding: '4px 14px', background: 'var(--bg-page)' }}>
+    <>
+      {/* ⚠️ Хэрэглэгчийн Профайлд сонгосон дэвсгэр зураг/өнгө header/tab-bar-ын
+          цаагуур тунгалаг харагдаж болзошгүйг арилгах — бүтэн дэлгэцийг бүрхэх
+          НЭГ өнгийн (var(--bg-page)) давхарга, .app-bg-layer-ээс дээш,
+          header/tab-bar-аас доош z-index-тэй. */}
+      <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-page)', zIndex: 0 }} />
+      <div style={{ ...style, display: 'flex', flexDirection: 'column', padding: '4px 14px' }}>
       <div className="mobile-list-item" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: 0, marginBottom: 10 }}>
         <div ref={msgBoxRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, padding: '14px 16px' }}>
           {!messages.length && <div className="pool-empty">Зурвас алга — доор эхлүүлээрэй</div>}
@@ -168,10 +174,11 @@ export default function CallLog({ profile }) {
           onChange={e => { setContent(e.target.value); notifyTyping(); }}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
           placeholder="Зурвас бичих..." rows={1}
-          style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 4, padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', resize: 'none', height: 44 }} />
-        <button className="login-btn" style={{ height: 44, width: 'auto', padding: '0 20px', flexShrink: 0 }} onClick={send} disabled={sending}>Илгээх</button>
+          style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 4, padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', resize: 'none', height: 44, boxSizing: 'border-box' }} />
+        <button className="login-btn" style={{ height: 44, width: 'auto', padding: '0 20px', marginTop: 0, flexShrink: 0, boxSizing: 'border-box' }} onClick={send} disabled={sending}>Илгээх</button>
       </div>
       {error && <div className="login-error">{error}</div>}
-    </div>
+      </div>
+    </>
   );
 }
