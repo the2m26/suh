@@ -121,6 +121,19 @@ export default function App() {
     document.documentElement.style.setProperty('--bg-tint-overlay', overlay);
   }, [profile?.bg_tint]);
 
+  // ⚠️ 2026-07-30 нэмэв: "Интерфейс"-ийн картын хүрээний өнгө (0=#000000 —
+  // 255=#ffffff саарал хэмжүүр). Утга сонгоогүй үед App.css-ийн стандарт
+  // --border-card хэвээр үлдэнэ (fallback).
+  useEffect(() => {
+    if (profile?.card_border_gray == null) {
+      document.documentElement.style.removeProperty('--card-border-computed');
+      return;
+    }
+    const g = Math.max(0, Math.min(255, profile.card_border_gray));
+    const hex = g.toString(16).padStart(2, '0');
+    document.documentElement.style.setProperty('--card-border-computed', `#${hex}${hex}${hex}`);
+  }, [profile?.card_border_gray]);
+
   // Шинэ мэдээ уншаагүй тоог 1 минут тутам шалгана
   useEffect(() => {
     if (!user) return;

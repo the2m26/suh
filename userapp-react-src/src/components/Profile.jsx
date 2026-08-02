@@ -162,6 +162,7 @@ export default function Profile({ profile, user, onProfileUpdate }) {
       p_card_tint: next.card_tint ?? 0,
       p_card_transparency: next.card_transparency ?? 0,
       p_bg_tint: next.bg_tint ?? 0,
+      p_card_border_gray: next.card_border_gray ?? null,
     });
     if (error) { alert('Хадгалахад алдаа гарлаа: ' + error.message); return; }
     onProfileUpdate(next);
@@ -181,6 +182,7 @@ export default function Profile({ profile, user, onProfileUpdate }) {
   async function setBgTint(v) { await savePrefs({ bg_tint: v }); }
   async function setCardTint(v) { await savePrefs({ card_tint: v }); }
   async function setCardTransparency(v) { await savePrefs({ card_transparency: v }); }
+  async function setCardBorderGray(v) { await savePrefs({ card_border_gray: v }); }
   async function removeBackground() { await savePrefs({ bg_image_url: null, bg_color: null }); }
 
   if (loading) return <div className="pool-empty">Ачаалж байна...</div>;
@@ -251,7 +253,7 @@ export default function Profile({ profile, user, onProfileUpdate }) {
         </div>
 
         <div className="settings-row settings-row-link" onClick={() => setBgOpen(o => !o)}>
-          <span>Background image</span>
+          <span>Интерфейс</span>
           <span className="settings-row-arrow">{bgOpen ? '▲' : '▼'}</span>
         </div>
         {bgOpen && (
@@ -292,6 +294,11 @@ export default function Profile({ profile, user, onProfileUpdate }) {
               <span className="tint-dot tint-dot-solid" />
               <input type="range" min="0" max="90" value={profile.card_transparency ?? 0} onChange={e => setCardTransparency(+e.target.value)} />
               <span className="tint-dot tint-dot-hollow" />
+            </div>
+            <div className="profile-card-tint-row">
+              <span className="tint-dot" style={{ background: '#000000' }} />
+              <input type="range" min="0" max="255" value={profile.card_border_gray ?? 30} onChange={e => setCardBorderGray(+e.target.value)} />
+              <span className="tint-dot" style={{ background: '#ffffff', border: '1px solid var(--border-card)' }} />
             </div>
           </div>
         )}

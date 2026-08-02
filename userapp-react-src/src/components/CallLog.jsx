@@ -1,73 +1,145 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { sb } from '../lib/supabase';
 
-const MAX_LEN = 280;
+// ⚠️ 2026-07-30: "СӨХ-Д САНАЛ ХүСЭЛТ ИЛГЭЭХ" (энгийн нэг чиглэлийн форм) ->
+// "СӨХ-тэй харилцах" (CC center-той шууд chat/messenger) болж бүрэн дахин
+// бичигдэв. Энэ суваг ЗОРИУДААР Inbox (get_my_notifications)-оос тусгаарлагдсан
+// — notifications.source='cc-center' гэж тэмдэглэгдсэн мөрүүд Inbox-д ОРОХГүй,
+// зөвхөн ЭНД харагдана (Suh.html-ийн "Зар, мэдэгдэл илгээх" хуудаснаас илгээсэн
+// зар/мэдэгдэл/анхааруулга/санамж/нэхэмжлэх ЗӨВХӨН Inbox-т, холилдохгүй).
 
-function fmtDate(iso) {
-  if (!iso) return '';
+function fmtTime(iso) {
   const d = new Date(iso);
-  const p = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+function fmtDay(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+}
+
+let _typingChannel = null;
+function _ensureTypingChannel() {
+  if (!_typingChannel) _typingChannel = sb.channel('cc-typing-broadcast');
+  return _typingChannel;
 }
 
 export default function CallLog({ profile }) {
+  const [residentId, setResidentId] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [content, setContent] = useState('');
-  const [status, setStatus] = useState('');
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [history, setHistory] = useState(null);
-  const senderName = profile.full_name || '—';
-  const remaining = MAX_LEN - content.length;
+  const [staffTyping, setStaffTyping] = useState(false);
+  const typingGateRef = useRef(0);
+  const typingHideRef = useRef(null);
+  const msgBoxRef = useRef(null);
 
-  async function loadHistory() {
-    const { data } = await sb.from('feedback_requests').select('*').eq('apt', profile.apt).order('created_at', { ascending: false });
-    setHistory(data || []);
+  async function loadThread(rId) {
+    const [{ data: incoming }, { data: outgoing }] = await Promise.all([
+      sb.from('feedback_requests').select('*').eq('apt', profile.apt).order('created_at', { ascending: true }),
+      rId
+        ? sb.from('notifications').select('*').eq('source', 'cc-center').eq('recipient_kind', 'resident')
+            .eq('recipient_filter', 'specific').eq('recipient_specific_id', rId).order('sent_at', { ascending: true })
+        : Promise.resolve({ data: [] }),
+    ]);
+    const merged = [
+      ...(incoming || []).map(m => ({ dir: 'out', text: m.content, at: m.created_at })),
+      ...(outgoing || []).map(m => ({ dir: 'in', text: m.content, at: m.sent_at, sender: m.sender_name })),
+    ].sort((a, b) => new Date(a.at) - new Date(b.at));
+    setMessages(merged);
   }
-  useEffect(() => { loadHistory(); }, [profile.apt]);
 
-  async function submit() {
+  useEffect(() => {
+    (async () => {
+      const { data: resident } = await sb.from('residents').select('id').eq('apt', profile.apt).maybeSingle();
+      const rId = resident?.id || null;
+      setResidentId(rId);
+      await loadThread(rId);
+
+      // Realtime: ажилтны хариулт шууд орж ирнэ
+      const ch = sb.channel('my-cc-thread-live')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+          const row = payload.new;
+          if (row.source !== 'cc-center' || row.recipient_specific_id !== rId) return;
+          setMessages(prev => [...prev, { dir: 'in', text: row.content, at: row.sent_at, sender: row.sender_name }]);
+        })
+        .subscribe();
+
+      _ensureTypingChannel().on('broadcast', { event: 'typing' }, (msg) => {
+        if (String(msg.payload?.apt) !== String(profile.apt)) return;
+        setStaffTyping(true);
+        clearTimeout(typingHideRef.current);
+        typingHideRef.current = setTimeout(() => setStaffTyping(false), 3000);
+      }).subscribe();
+
+      return () => { sb.removeChannel(ch); };
+    })();
+  }, [profile.apt]);
+
+  useEffect(() => {
+    if (msgBoxRef.current) msgBoxRef.current.scrollTop = msgBoxRef.current.scrollHeight;
+  }, [messages]);
+
+  function notifyTyping() {
+    const now = Date.now();
+    if (now - typingGateRef.current < 1500) return;
+    typingGateRef.current = now;
+    _ensureTypingChannel().send({ type: 'broadcast', event: 'typing', payload: { apt: profile.apt, senderName: profile.full_name } });
+  }
+
+  async function send() {
+    const text = content.trim();
+    if (!text) { setError('Бичнэ vv'); return; }
     setError('');
-    if (!content.trim()) { setError('Агуулгаа бичнэ vv'); return; }
-    setStatus('sending');
-    const { error: insErr } = await sb.from('feedback_requests').insert({ apt: profile.apt, sender_name: senderName, content: content.trim() });
-    if (insErr) { setStatus('error'); setError('Алдаа гарлаа — дахин оролдоно уу'); return; }
-    setStatus('ok');
+    setSending(true);
+    const { error: insErr } = await sb.from('feedback_requests').insert({ apt: profile.apt, sender_name: profile.full_name, content: text });
+    setSending(false);
+    if (insErr) { setError('Алдаа гарлаа — дахин оролдоно уу'); return; }
     setContent('');
-    await loadHistory();
-    setTimeout(() => setStatus(''), 2500);
+    setMessages(prev => [...prev, { dir: 'out', text, at: new Date().toISOString() }]);
   }
 
+  let lastDay = '';
   return (
-    <div>
-      <div className="mobile-list-item">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
-          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Илгээгч</span>
-          <span style={{ fontSize: 13, fontWeight: 700 }}>{senderName} ({profile.apt} тоот)</span>
-        </div>
-      </div>
-      <div className="mobile-list-item">
-        <div className="call-log-textarea-wrap">
-          <div className="call-log-counter">{remaining}</div>
-          <textarea className="call-log-textarea" value={content}
-            onChange={e => setContent(e.target.value.slice(0, MAX_LEN))}
-            maxLength={MAX_LEN} rows={5} placeholder="Санал, хүсэлтээ энд бичнэ vv..." />
-        </div>
-        <button className="login-btn" style={{ marginTop: 12 }} onClick={submit} disabled={status === 'sending'}>
-          {status === 'sending' ? 'Илгээж байна...' : 'Илгээх'}
-        </button>
-        {status === 'ok' && <div className="guest-invite-success">✓ Амжилттай илгээгдлээ</div>}
-        {error && <div className="login-error">{error}</div>}
-      </div>
-      {history && history.length > 0 && (
-        <>
-          <div className="section-title">Миний илгээсэн санал, хүсэлт</div>
-          {history.map(h => (
-            <div key={h.id} className="mobile-list-item call-log-history-row">
-              <div className="call-log-history-date">{fmtDate(h.created_at)}</div>
-              <div className="call-log-history-content">{h.content}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)' }}>
+      <div ref={msgBoxRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, padding: '4px 2px' }}>
+        {!messages.length && <div className="pool-empty">Зурвас алга — доор эхлүүлээрэй</div>}
+        {messages.map((m, i) => {
+          const day = fmtDay(m.at);
+          const showDay = day !== lastDay;
+          lastDay = day;
+          const isOut = m.dir === 'out';
+          return (
+            <div key={i}>
+              {showDay && (
+                <div style={{ alignSelf: 'center', textAlign: 'center', fontSize: 10.5, color: 'var(--text-secondary)', background: 'var(--bg-card)', padding: '3px 12px', borderRadius: 20, margin: '6px auto', width: 'fit-content' }}>{day}</div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '78%', marginLeft: isOut ? 'auto' : 0 }}>
+                <div style={{
+                  padding: '10px 14px', borderRadius: 14, fontSize: 13, lineHeight: 1.5,
+                  background: isOut ? 'var(--accent-dark, var(--accent))' : 'var(--bg-card)',
+                  color: isOut ? '#fff' : 'var(--text-primary)',
+                  border: isOut ? 'none' : '1px solid var(--border-card)',
+                  borderTopRightRadius: isOut ? 4 : 14, borderTopLeftRadius: isOut ? 14 : 4,
+                }}>{m.text}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 4, padding: '0 4px', textAlign: isOut ? 'right' : 'left' }}>
+                  {fmtTime(m.at)}{!isOut && m.sender ? ' · ' + m.sender : ''}
+                </div>
+              </div>
             </div>
-          ))}
-        </>
-      )}
+          );
+        })}
+      </div>
+      {staffTyping && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontStyle: 'italic', padding: '2px 4px' }}>СӨХ бичиж байна...</div>}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', paddingTop: 10 }}>
+        <textarea value={content}
+          onChange={e => { setContent(e.target.value); notifyTyping(); }}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+          placeholder="Зурвас бичих..." rows={1}
+          style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 4, padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', resize: 'none', height: 29 }} />
+        <button className="login-btn" style={{ height: 44, width: 'auto', padding: '0 20px' }} onClick={send} disabled={sending}>Илгээх</button>
+      </div>
+      {error && <div className="login-error">{error}</div>}
     </div>
   );
 }
