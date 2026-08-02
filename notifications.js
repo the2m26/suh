@@ -34,7 +34,6 @@ function renderNotificationsPage() {
   updateNotifPreview();
   loadMySenderInfo();
   if(document.getElementById('notif-tab-sent')?.style.display !== 'none') renderNotifications();
-  if(document.getElementById('notif-tab-inbox')?.style.display !== 'none') loadCallLogInbox();
 }
 
 // ============================================================
@@ -60,11 +59,9 @@ async function loadMySenderInfo() {
 function switchNotifTab(name, el) {
   document.getElementById('notif-tab-send').style.display = name === 'send' ? 'block' : 'none';
   document.getElementById('notif-tab-sent').style.display = name === 'sent' ? 'block' : 'none';
-  document.getElementById('notif-tab-inbox').style.display = name === 'inbox' ? 'block' : 'none';
   document.querySelectorAll('#notif-tabs .tab').forEach(t => t.classList.remove('active'));
   if(el) el.classList.add('active');
   if(name === 'sent') renderNotifications();
-  if(name === 'inbox') loadCallLogInbox();
 }
 
 // "Бүлэг" сонголт өөрчлөгдөхөд "Хүлээн авагч" dropdown-ийг тухайн бүлэгт
@@ -336,7 +333,7 @@ async function sendNotification() {
       if(kind === 'resident') personalTitle = `${r.name}${r.apt ? ' ' + r.apt : ''} Танаа`;
       else if(kind === 'business') personalTitle = `${r.name}-д`;
     }
-    return { ...r, title: personalTitle };
+    return { ...r, title: personalTitle, content };
   });
 
   const row = {
@@ -358,7 +355,7 @@ async function sendNotification() {
   // (Мэдэгдэл илгээх), AUTH_MODULES-д "notifications" модуль аль хэдийн
   // бүртгэлтэй байсан ч, sendNotification() үүнийг ХЭЗЭЭ Ч дуудахгүй байв.
   logActivity('notify', 'notifications', notifications[0]?.id || null, `${recipientLabel} — ${title}`);
-  if (channels.includes('inapp')) triggerPushForRecipients(recipientsWithTitle, title);
+  if (channels.includes('inapp')) await triggerPushForRecipients(recipientsWithTitle, title);
 
 
   let msg = `${recipients.length} хүлээн авагчид In-app мэдэгдэл хадгалагдлаа ✓`;

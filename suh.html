@@ -514,8 +514,11 @@
       <span>Тоот, зогсоол, агуулах</span>
     </div>
     <div class="nav-item" id="nav-page-communications" onclick="showPage('communications')">
+      <span>Зар, мэдэгдэл илгээх</span>
+    </div>
+    <div class="nav-item" id="nav-page-cc-center" onclick="showPage('cc-center')">
       <span>CC center</span>
-      <span class="nav-badge" id="call-log-badge" style="display:none">0</span>
+      <span class="nav-badge" id="cc-center-badge" style="display:none">0</span>
     </div>
     <div class="nav-item" id="nav-page-gate-log" onclick="showPage('gate-log')">
       <span>Хаалтны удирдлага</span>
@@ -1399,7 +1402,6 @@
       <div class="tabs mb-16" id="notif-tabs">
         <div class="tab active" onclick="switchNotifTab('send',this)">Илгээх</div>
         <div class="tab" onclick="switchNotifTab('sent',this)">Илгээсэн</div>
-        <div class="tab" onclick="switchNotifTab('inbox',this)">Ирсэн</div>
       </div>
 
       <!-- ИЛГЭЭХ -->
@@ -1532,37 +1534,6 @@
         </div>
       </div>
 
-      <!-- ИРСЭН (2026-07-30 нэмэв — "Ирсэн санал, хүсэлт" хуудсыг энд 3 дахь таб болгож нэгтгэв) -->
-      <div id="notif-tab-inbox" style="display:none">
-        <div class="flex-between mb-16">
-          <div class="flex gap-8">
-            <select id="calllog-year-filter" onchange="loadCallLogInbox()" style="width:auto">
-              <option value="">Бүх он</option>
-            </select>
-            <select id="calllog-month-filter" onchange="loadCallLogInbox()" style="width:auto">
-              <option value="">Бүх сар</option>
-              <option value="1">1-р сар</option><option value="2">2-р сар</option>
-              <option value="3">3-р сар</option><option value="4">4-р сар</option>
-              <option value="5">5-р сар</option><option value="6">6-р сар</option>
-              <option value="7">7-р сар</option><option value="8">8-р сар</option>
-              <option value="9">9-р сар</option><option value="10">10-р сар</option>
-              <option value="11">11-р сар</option><option value="12">12-р сар</option>
-            </select>
-            <select id="calllog-day-filter" onchange="loadCallLogInbox()" style="width:auto">
-              <option value="">Бүх өдөр</option>
-            </select>
-            <select id="calllog-status-filter" onchange="loadCallLogInbox()" style="width:auto">
-              <option value="">Бүх төлөв</option>
-              <option value="new">Шинэ</option>
-              <option value="reviewed">Хянасан</option>
-            </select>
-            <input type="text" id="calllog-search" placeholder="🔍 Тоот, илгээгч, агуулгаар хайх..." oninput="loadCallLogInbox()" onkeyup="loadCallLogInbox()" style="width:220px">
-          </div>
-        </div>
-        <div class="card" style="overflow-x:auto">
-          <div id="call-log-inbox-body"></div>
-        </div>
-      </div>
     </div>
 
     <!-- Мэдэгдлийн дэлгэрэнгүй харах модал -->
@@ -1573,6 +1544,32 @@
           <button class="modal-close" onclick="closeModal('modal-notif-detail')">×</button>
         </div>
         <div class="modal-body" id="notif-detail-body"></div>
+      </div>
+    </div>
+
+    <!-- CC CENTER (2026-07-30 — chat/messenger маягийн загвараас ЖИНХЭНЭ болсон.
+         Хуучин "CC center" одоо "Зар, мэдэгдэл илгээх" нэртэй, "Ирсэн" таб нь
+         энэ хуудсаар орлогдож устгагдсан) -->
+    <div class="page" id="page-cc-center">
+      <div style="display:flex;height:calc(100vh - 48px);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <!-- Зүүн: харилцагчийн жагсаалт -->
+        <div style="width:300px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-surface);display:flex;flex-direction:column">
+          <div style="padding:12px;border-bottom:1px solid var(--border);display:flex;gap:8px">
+            <select id="cc-status-filter" onchange="renderCCThreadList()" style="width:auto;flex-shrink:0">
+              <option value="all">All</option>
+              <option value="muted">Muted</option>
+              <option value="solved">Solved</option>
+              <option value="unsolved">Unsolved</option>
+              <option value="urgent">Urgent</option>
+            </select>
+            <input type="text" id="cc-search" placeholder="🔍 Тоот, нэрээр хайх..." oninput="renderCCThreadList()" style="width:100%">
+          </div>
+          <div id="cc-thread-list" style="flex:1;overflow-y:auto"></div>
+        </div>
+        <!-- Баруун: сонгосон thread -->
+        <div id="cc-thread-view" style="flex:1;display:flex;flex-direction:column;min-width:0">
+          <div class="empty-state" style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">Зүүн талаас харилцагч сонгоно уу</div>
+        </div>
       </div>
     </div>
 
@@ -1789,6 +1786,34 @@
             </div>
           </div>
           <div>
+            <label>Хэн</label>
+            <select id="actlog-role-filter" onchange="renderActivityLogPage()">
+              <option value="">— Бүгд —</option>
+              <option value="admin">Админ</option>
+              <option value="uz">Удирдах зөвлөл</option>
+              <option value="hz">Хяналтын зөвлөл</option>
+              <option value="gz">Гүйцэтгэх захирал</option>
+              <option value="nb">Нягтлан бодогч</option>
+              <option value="mn">Менежер</option>
+              <option value="ot">Сууц өмчлөгч</option>
+            </select>
+          </div>
+          <div>
+            <label>Үйлдэл</label>
+            <select id="actlog-action-filter" onchange="renderActivityLogPage()">
+              <option value="">— Бүгд —</option>
+              <option value="add">Нэмэх</option>
+              <option value="edit">Засах</option>
+              <option value="delete">Устгах</option>
+              <option value="print">Хэвлэх</option>
+              <option value="export">Экспорт</option>
+              <option value="payroll">Сарын цалин тооцох</option>
+              <option value="invoice">Журналд нэхэмжлэх бүртгэх</option>
+              <option value="notify">Мэдэгдэл илгээх</option>
+              <option value="payment">Төлбөр бүртгэх</option>
+            </select>
+          </div>
+          <div>
             <label>Модуль</label>
             <select id="actlog-module-filter" onchange="renderActivityLogPage()">
               <option value="">— Бүгд —</option>
@@ -1816,21 +1841,6 @@
               <option value="auth_levels">Хандах эрхийн тохиргоо</option>
               <option value="users">Хэрэглэгч удирдлага</option>
               <option value="app-settings">Апп тохиргоо</option>
-            </select>
-          </div>
-          <div>
-            <label>Үйлдэл</label>
-            <select id="actlog-action-filter" onchange="renderActivityLogPage()">
-              <option value="">— Бүгд —</option>
-              <option value="add">Нэмэх</option>
-              <option value="edit">Засах</option>
-              <option value="delete">Устгах</option>
-              <option value="print">Хэвлэх</option>
-              <option value="export">Экспорт</option>
-              <option value="payroll">Сарын цалин тооцох</option>
-              <option value="invoice">Журналд нэхэмжлэх бүртгэх</option>
-              <option value="notify">Мэдэгдэл илгээх</option>
-              <option value="payment">Төлбөр бүртгэх</option>
             </select>
           </div>
           <button class="btn btn-outline btn-sm" onclick="renderActivityLogPage()">↻ Шинэчлэх</button>
@@ -4145,6 +4155,7 @@ where category='invoice' and sent_at >= 'YYYY-MM-01' and sent_at < 'дараа �
     </div>
     <div class="modal-body" style="max-height:78vh;overflow-y:auto" id="apt-detail-body"></div>
     <div class="modal-footer">
+      <button class="btn btn-outline" id="apt-detail-cc-btn" onclick="closeModal('modal-apt-detail');openCCForResident(selectedAptForDetail?.apt)">CC center</button>
       <button class="btn btn-outline" onclick="quickPay()" id="apt-detail-pay-btn">Төлбөр бүртгэх</button>
       <button class="btn btn-outline" id="apt-detail-notify-btn" onclick="openNotifyFor('resident', selectedAptForDetail?.id, (selectedAptForDetail?.apt||'')+' — '+(selectedAptForDetail?.firstname||selectedAptForDetail?.owner||'')+' '+(selectedAptForDetail?.lastname||''))">Мэдэгдэл</button>
       <button class="btn btn-outline" id="apt-detail-edit-btn" onclick="aptDetailEdit()"></button>
@@ -4599,7 +4610,7 @@ let notifications = [
 // ============================================================
 // Хуудасны нэр -> Монгол гарчиг. showPage() болон Хэрэглэгчийн удирдлагын "Онлайн" багана
 // хоёулаа нэг эх сурвалжийг ашиглана — давхардуулахгүйн тулд эндэ нэг л газар тодорхойлов.
-const PAGE_LABELS = {dashboard:'Хянах самбар',residents:'Сууц өмчлөгчийн бүртгэл',business:'Аж ахуйн нэгж бүртгэл',clientele:'Харилцагчийн бүртгэл',finance:'Гүйлгээний бүртгэл',assets:'Үндсэн хөрөнгө бүртгэл',payments:'Төлбөр төлөлт',apartments:'Тоот, зогсоол, агуулах',reports:'СӨХ дотоод тайлан',fintax:'Санхүү, татварын тайлан',communications:'CC center','gate-log':'Хаалтны удирдлага','news':'Мэдээ, мэдээлэл','newseditor':'Мэдээний агрегат',admin:'Хаягжилт тохиргоо','sokh-settings':'СӨХ тохиргоо','tariff-settings':'Тариф тохиргоо','market-valuation':'Зах зээлийн үнэлгээ',auth_levels:'Хандах эрхийн тохиргоо',users:'Хэрэглэгч удирдлага',polls:'Сонгууль, санал асуулга',accounting:'Нягтлан бодох бүртгэл','nbb-settings':'НББ тохиргоо','asset-settings':'Үндсэн хөрөнгө тохиргоо',employees:'Ажилтны бүртгэл','app-settings':'Апп тохиргоо'};
+const PAGE_LABELS = {dashboard:'Хянах самбар',residents:'Сууц өмчлөгчийн бүртгэл',business:'Аж ахуйн нэгж бүртгэл',clientele:'Харилцагчийн бүртгэл',finance:'Гүйлгээний бүртгэл',assets:'Үндсэн хөрөнгө бүртгэл',payments:'Төлбөр төлөлт',apartments:'Тоот, зогсоол, агуулах',reports:'СӨХ дотоод тайлан',fintax:'Санхүү, татварын тайлан',communications:'Зар, мэдэгдэл илгээх','cc-center':'CC center','gate-log':'Хаалтны удирдлага','news':'Мэдээ, мэдээлэл','newseditor':'Мэдээний агрегат',admin:'Хаягжилт тохиргоо','sokh-settings':'СӨХ тохиргоо','tariff-settings':'Тариф тохиргоо','market-valuation':'Зах зээлийн үнэлгээ',auth_levels:'Хандах эрхийн тохиргоо',users:'Хэрэглэгч удирдлага',polls:'Сонгууль, санал асуулга',accounting:'Нягтлан бодох бүртгэл','nbb-settings':'НББ тохиргоо','asset-settings':'Үндсэн хөрөнгө тохиргоо',employees:'Ажилтны бүртгэл','app-settings':'Апп тохиргоо'};
 function showPage(name) {
   // Эрхийн шалгалт — эрхгүй хуудсыг нээхээс сэргийлнэ (зөвхөн naү-г нуухаас гадна)
   if(typeof canAccessPage === 'function' && !canAccessPage(name)) {
@@ -4626,6 +4637,7 @@ function showPage(name) {
   if(name==='fintax') renderGovReportsPage();
   if(name==='communications') renderNotificationsPage();
   if(name==='app-settings') { renderAppSettingsModulesList(); loadCallServiceList(); loadEmergencyContactsList(); }
+  if(name==='cc-center') renderCCCenterPage();
   if(name==='gate-log') renderGateControlPage();
   if(name==='activity-log') renderActivityLogPage();
   if(name==='admin') renderAdminPage();
@@ -5511,11 +5523,12 @@ const AUTH_MODULES = [
   {key:'apartments',    page:'apartments',    label:'Тоот, зогсоол, агуулах',   actions:['view','add','edit','delete']},
   {key:'reports',       page:'reports',       label:'СӨХ дотоод тайлан',        actions:['view','print','export']},
   {key:'fintax',        page:'fintax',        label:'Санхүү, татварын тайлан',  actions:['view','print','export']},
-  {key:'notifications', page:'communications',label:'Зар мэдэгдэл илгээх',        actions:['view','add','edit','delete','notify']},
+  {key:'notifications', page:'communications',label:'Зар, мэдэгдэл илгээх',        actions:['view','add','edit','delete','notify']},
   {key:'polls',         page:'polls',         label:'Сонгууль, санал асуулга',  actions:['view','add','edit','delete','print','export']},
   {key:'accounting',    page:'accounting',    label:'Нягтлан бодох бүртгэл',    actions:['view','print','export','invoice']},
   {key:'employees',     page:'employees',     label:'Ажилтны бүртгэл',          actions:['view','add','edit','delete','print','export','payroll']},
-  {key:'call-log',      page:null,            label:'Ирсэн санал, хүсэлт (CC center-ийн "Ирсэн" таб)', actions:['view','add','edit','delete']},
+  {key:'call-log',      page:null,            label:'Ирсэн санал, хүсэлт (CC center-ийн эх өгөгдөл)', actions:['view','add','edit','delete']},
+  {key:'cc-center',    page:'cc-center',   label:'CC center',       actions:['view','add','edit','delete']},
   {key:'gate-log',      page:'gate-log',      label:'Хаалтны удирдлага',        actions:['view','add','edit','delete']},
   {key:'news',          page:'news',          label:'Мэдээ, мэдээлэл',          actions:['view']},
   {key:'newseditor',    page:'newseditor',    label:'Мэдээний агрегат',         actions:['view','add','edit','delete']},
@@ -5901,8 +5914,9 @@ async function onLoginSuccess() {
   // Өгөгдөл ачаалах
   await db_init();
   startPresenceTracking();
-  updateCallLogBadge();
   updateGateLogBadge();
+  updateCCBadge();
+  if (typeof setupTransactionsRealtime === 'function') setupTransactionsRealtime();
 
   // ⚠️ "suh.html?page=residents" маягаар deep-link-ээр шилжсэн бол, тухайн
   // хуудсыг шууд нээнэ (эрхгүй бол showPage() өөрөө алдаа заана).
@@ -6434,6 +6448,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 <script src="notifications.js"></script>
 <script src="news.js"></script>
 <script src="gate-control.js"></script>
+<script src="cccenter.js"></script>
 <script src="newseditor.js"></script>
 </body>
 </html>

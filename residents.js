@@ -534,16 +534,19 @@ function _aptDetailSetButtons(res) {
   const editBtn = document.getElementById('apt-detail-edit-btn');
   const payBtn = document.getElementById('apt-detail-pay-btn');
   const notifyBtn = document.getElementById('apt-detail-notify-btn');
+  const ccBtn = document.getElementById('apt-detail-cc-btn');
   if(res) {
     editBtn.textContent = 'Засах';
     editBtn.style.display = '';
     payBtn.style.display = '';
     if(notifyBtn) notifyBtn.style.display = '';
+    if(ccBtn) ccBtn.style.display = '';
   } else {
     editBtn.textContent = 'Сууц өмчлөгч бүртгэх';
     editBtn.style.display = '';
     payBtn.style.display = 'none';
     if(notifyBtn) notifyBtn.style.display = 'none'; // бүртгэлгүй тоотод мэдэгдэл илгээх хүн алга
+    if(ccBtn) ccBtn.style.display = 'none'; // бүртгэлгүй тоотод CC center-т харилцах хүн алга
   }
 }
 function showAptDetail(aptId, buildingId, floor, door, res, paid, sqm) {

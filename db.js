@@ -124,6 +124,7 @@ async function renderActivityLogPage() {
   }
   const moduleFilter = document.getElementById('actlog-module-filter')?.value || '';
   const actionFilter = document.getElementById('actlog-action-filter')?.value || '';
+  const roleFilter = document.getElementById('actlog-role-filter')?.value || '';
   const yearFilter = yearEl?.value || '';
   const monthFilter = document.getElementById('actlog-month-filter')?.value || '';
   const dayFilter = document.getElementById('actlog-day-filter')?.value || '';
@@ -131,6 +132,7 @@ async function renderActivityLogPage() {
   let q = sb.from('activity_log').select('*').order('created_at', { ascending: false });
   if (moduleFilter) q = q.eq('module', moduleFilter);
   if (actionFilter) q = q.eq('action', actionFilter);
+  if (roleFilter) q = q.eq('actor_role', roleFilter);
 
   // ⚠️ 2026-07-22 нэмэв: "Огноо" (Он/Сар/Өдөр) шүүлтүүр — сонгосон дэлгэрэнгүйн
   // түвшингээс (жил/сар/өдөр) хамааран нарийвчилсан хугацааны мужаар шүүнэ.

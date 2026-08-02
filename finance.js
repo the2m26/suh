@@ -45,12 +45,37 @@ async function db_loadTransactions() {
   const {data,error} = await sb.from('transactions').select('*').order('id');
   if(error){console.error('transactions load error:', JSON.stringify(error), error.message);return;}
   if(!data){console.error('transactions: data is null');return;}
-  transactions = data.filter(Boolean).map(t=>({
+  transactions = data.filter(Boolean).map(_mapTransactionRow);
+}
+function _mapTransactionRow(t) {
+  return {
     id:t.id, apt:t.apt, aptId:t.resident_id, desc:t.description||'',
     subcat:t.subcat||'', type:t.type, amount:+t.amount, method:t.method||'',
     ref:t.ref||'', month:t.month, year:t.year, date:t.date||'', createdAt:t.created_at||null,
     status:t.status||'completed', category:t.category||'', clienteleId:t.clientele_id||null, assetId:t.asset_id||null, businessId:t.business_id||null
-  }));
+  };
+}
+
+// ⚠️ 2026-07-30 нэмэв: Банкны API/өөр ажилтнаас шинэ гүйлгээ орж ирэхэд
+// (жиш нь QPay/банкны webhook) Тθлбθр тθлθлт хуудсыг АВТОМАТААР шинэчилж,
+// хуучирсан өгөгдөл дээр үндэслэн 2 ажилтан зэрэг үйлдэл хийж зөрчил
+// үүсгэхээс сэргийлнэ. Зөвхөн НЭГ УДАА subscribe хийгдэнэ (db_init()-ээс
+// дуудагдана, аль ч хуудсан дээр байгаа үед ч badge-үүд шинэчлэгдэнэ).
+let _txRealtimeReady = false;
+function setupTransactionsRealtime() {
+  if (_txRealtimeReady) return;
+  _txRealtimeReady = true;
+  sb.channel('transactions-live')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, (payload) => {
+      const mapped = _mapTransactionRow(payload.new);
+      if (!transactions.some(x => x.id === mapped.id)) transactions.push(mapped);
+      if (typeof updatePaymentTabBadges === 'function') updatePaymentTabBadges();
+      if (document.getElementById('page-payments')?.classList.contains('active')) {
+        renderPaymentsTable(currentPayTab);
+        toast('Шинэ гүйлгээ орж ирлээ', 'success');
+      }
+    })
+    .subscribe();
 }
 async function db_saveTransaction(t) {
   const row = {
@@ -89,9 +114,9 @@ async function db_saveSettings(key, value) {
 // ============================================================
 
 // ⚠️ 2026-07-26 засав: perSqm/utility/garage/storageSqm/extra зэрэг тарифын
-// ДvН-vvдийг ЭНЭ ОБЪЕКТООС АВАХГvй БОЛЛОО — тэдгээр нь одоо `fee_catalog`
-// хvснэгэлд (Тариф тохиргоо → Тарифын каталог) мөр болгон хадгалагдана.
-// feeSettings/rentSettings-д зөвхөн ХУГАЦААНЫ ХОЦРОГДЛЫН босго vлдлээ.
+// ДүН-үүдийг ЭНЭ ОБЪЕКТООС АВАХГүй БОЛЛОО — тэдгээр нь одоо `fee_catalog`
+// хүснэгэлд (Тариф тохиргоо → Тарифын каталог) мөр болгон хадгалагдана.
+// feeSettings/rentSettings-д зөвхөн ХУГАЦААНЫ ХОЦРОГДЛЫН босго үлдлээ.
 let feeSettings = {penalty: 2, fundAmount: 5000000, pendingMonths: 1, overdueMonths: 2, riskMonths: 12};
 // Хаалтны тариф (2026-07-30 нэмэв) — gate-webhook Edge Function ЯГ ЭНЭ
 // snake_case түлхүүр нэрсийг уншдаг тул энд ч ижилхэн бичнэ (camelCase
@@ -112,7 +137,7 @@ function isBeforeSystemStart(year, month) {
 }
 // ============================================================
 // ТАРИФЫН КАТАЛОГ (2026-07-26 нэмэв — feeSettings/rentSettings-ийн
-// хатуу кодлогдсон тарифын дvнгийн оронд, tax_types/salary_components-той
+// хатуу кодлогдсон тарифын дүнгийн оронд, tax_types/salary_components-той
 // адил зарчмаар Supabase-backed динамик жагсаалт болгов)
 // ============================================================
 let feeCatalog = [];
@@ -121,15 +146,15 @@ async function db_loadFeeCatalog() {
   if (sbErr(error, 'Тарифын каталог ачаалах')) return;
   feeCatalog = data || [];
 }
-// Тухайн этитид (resident/business) ногдох "quantity" (юугаар vржих)-ийг
+// Тухайн этитид (resident/business) ногдох "quantity" (юугаар үржих)-ийг
 // unit_type-аас хамааруулж тодорхойлно. ⚠️ business type==='owner' зөвхөн
-// ГАЗРЫН ТАЛБАЙН (main_sqm) төлбөрөөс чөлөөлөгдөнө — бусад бvгдийг (зогсоол/
+// ГАЗРЫН ТАЛБАЙН (main_sqm) төлбөрөөс чөлөөлөгдөнө — бусад бүгдийг (зогсоол/
 // агуулах/ашиглалт/хог/нэмэлт) хэвээрээ төлнө (өмнөх computeBizFee()-ийн зарчим).
 // 2026-07-27 засав: "Өмчлөгч ААН талбайн төлбөрөөс автоматаар чөлөөлөгдөнө"
-// гэсэн дvрмийг бvрэн устгав — энэ бол СӨХ-ийн бодит бодлоготой нийцэхгvй,
-// код дотор өөрсдөө зохиож оруулсан ДАЛД дvрэм байсан. Одоо Өмчлөгч ч
-// Тvрээслэгчтэй адил, идэвхтэй мөр бvрээр (Талбайгаар/Тоогоор/Тогтмол
-// vл хамаарах) тооцоологдоно — тусгай тохиолдол vгvй.
+// гэсэн дүрмийг бүрэн устгав — энэ бол СӨХ-ийн бодит бодлоготой нийцэхгүй,
+// код дотор өөрсдөө зохиож оруулсан ДАЛД дүрэм байсан. Одоо Өмчлөгч ч
+// Түрээслэгчтэй адил, идэвхтэй мөр бүрээр (Талбайгаар/Тоогоор/Тогтмол
+// үл хамаарах) тооцоологдоно — тусгай тохиолдол үгүй.
 function _feeQuantity(entity, entityType, unitType) {
   if (unitType === 'flat') return 1;
   if (unitType === 'main_sqm') {
@@ -154,7 +179,7 @@ function _feeQuantity(entity, entityType, unitType) {
   return 0;
 }
 // Нэгдсэн тооцооллын engine — Сууц/ААН хоёуланд адилхан ашиглана.
-// entityType: 'resident' | 'business'. Идэвхгvй (active=false) мөрийг алгасна.
+// entityType: 'resident' | 'business'. Идэвхгүй (active=false) мөрийг алгасна.
 function calcEntityFee(entity, entityType) {
   const rows = feeCatalog.filter(f => f.active && f.applies_to === entityType);
   const total = rows.reduce((s, f) => s + _feeQuantity(entity, entityType, f.unit_type) * (+f.rate || 0), 0);
@@ -162,8 +187,8 @@ function calcEntityFee(entity, entityType) {
 }
 // ⚠️ 2026-07-26 засав: ӨМНӨ зөвхөн (sqm) авч, Зогсоол/Агуулахыг ОРХИГДУУЛДАГ
 // байсан — accounting-bridge.js/residents.js-ийн гараар хуулбарласан хувилбар
-// vvнийг тооцдог байсан тул 2 газар ХАРИЛЦАН ЗӨРЖ байсан. Одоо бvтэн resident
-// object авч, ЯГ НЭГ л эх сурвалжаас (feeCatalog) тооцно — бvх дуудагч газар
+// үүнийг тооцдог байсан тул 2 газар ХАРИЛЦАН ЗӨРЖ байсан. Одоо бүтэн resident
+// object авч, ЯГ НЭГ л эх сурвалжаас (feeCatalog) тооцно — бүх дуудагч газар
 // (calcFee(r)) ижил, зөв тоо авна.
 function calcFee(r) {
   return calcEntityFee(r, 'resident');
@@ -212,8 +237,8 @@ function switchTariffTab(name, el) {
 }
 // DB-ээс ачаалсан feeSettings/rentSettings-г бодит HTML талбарт харуулна
 // (Өмнө нь энэ холбоос байхгүй байсан тул F5 дарахад тохиргоо "ресетлэгдэж" харагддаг байсан алдаа)
-// ⚠️ 2026-07-26 засав: тарифын дvн (perSqm/garage/...) одоо Тарифын каталогт
-// орсон тул энд зөвхөн хугацааны хоцрогдлын босго л vлдэв.
+// ⚠️ 2026-07-26 засав: тарифын дүн (perSqm/garage/...) одоо Тарифын каталогт
+// орсон тул энд зөвхөн хугацааны хоцрогдлын босго л үлдэв.
 function populateTariffFields() {
   const feeMap = {
     'fee-penalty': feeSettings.penalty, 'fee-fund-amount': feeSettings.fundAmount,
@@ -232,7 +257,7 @@ function populateTariffFields() {
     if(el && val!==undefined && val!==null) el.value = val;
   });
   // ⚠️ 2026-07-27 нэмэв: НББ журнал цэвэрлэх заавар — зөвхөн admin рольтой
-  // хэрэглэгчид харагдана (энгийн хэрэглэгчид/ажилтанд шаардлагагvй техникийн мэдээлэл).
+  // хэрэглэгчид харагдана (энгийн хэрэглэгчид/ажилтанд шаардлагагүй техникийн мэдээлэл).
   const isAdmin = currentProfile?.role === 'admin';
   const gFees = document.getElementById('admin-guide-fees'); if (gFees) gFees.style.display = isAdmin ? 'block' : 'none';
   const gRent = document.getElementById('admin-guide-rent'); if (gRent) gRent.style.display = isAdmin ? 'block' : 'none';
@@ -250,12 +275,12 @@ async function saveGateTariffSettings(){
 // ============================================================
 // ТАРИФЫН КАТАЛОГ — ЖАГСААЛТ, НЭМЭХ/ЗАСАХ/УСТГАХ (2026-07-26 нэмэв)
 // ============================================================
-// ⚠️ 2026-07-27 засав: Сууц/ААН-ий тохиргоог БvРЭН ТУСГААРЛАВ (applies_to='both'
-// бvрэн арилгав) — 2 систем хоорондоо ямар ч хамааралгvй, тус тусдаа мөр.
+// ⚠️ 2026-07-27 засав: Сууц/ААН-ий тохиргоог БүРЭН ТУСГААРЛАВ (applies_to='both'
+// бүрэн арилгав) — 2 систем хоорондоо ямар ч хамааралгүй, тус тусдаа мөр.
 // unit_type-ын дэлгэцэнд ЗӦВХӦН 3 цэвэр сонголт (Талбайгаар/Тоогоор/Тогтмол).
-// "locked" мөрvvд (Тоот/ААН/Зогсоол/Агуулах — Хаягжилт тохиргооны бодит тоот/
-// зогсоол/агуулахтай шууд уяатай) — эдгээрийн НЭРИЙГ ХЭЗЭЭ Ч санамсаргvй солиж
-// болохгvй (invoice/мэдэгдэл дэх бичвэр бvрэн эндvvрэлд хvргэнэ) тул Нэр талбарыг
+// "locked" мөрүүд (Тоот/ААН/Зогсоол/Агуулах — Хаягжилт тохиргооны бодит тоот/
+// зогсоол/агуулахтай шууд уяатай) — эдгээрийн НЭРИЙГ ХЭЗЭЭ Ч санамсаргүй солиж
+// болохгүй (invoice/мэдэгдэл дэх бичвэр бүрэн эндүүрэлд хүргэнэ) тул Нэр талбарыг
 // disable, устгах товчийг нуана. Тооцооллын арга/Хэмжээ (тарифын бодлого тул) чөлөөтэй.
 const FEE_UNIT_LABELS = {
   main_sqm: { badge:'Талбайгаар (₮/м²/сар)', tag:'tag-accent', rateLabel:'Хэмжээ (₮/м²/сар)' },
@@ -266,12 +291,12 @@ const FEE_UNIT_LABELS = {
   parking_count: { badge:'Тоогоор (₮/ш/сар)', tag:'tag-warning', rateLabel:'Хэмжээ (₮/ширхэг/сар)' },
   flat: { badge:'Тогтмол (₮/сар)', tag:'tag-success', rateLabel:'Хэмжээ (₮/сар)' },
 };
-// ⚠️ 2026-07-27 нэмэв: "Зогсоол"/"Агуулах" мөр тус бvр ӨӨРИЙНХӨӨ физик объектоор
+// ⚠️ 2026-07-27 нэмэв: "Зогсоол"/"Агуулах" мөр тус бүр ӨӨРИЙНХӨӨ физик объектоор
 // (parking эсвэл storage) л тооцогдох ёстой — өмнө нь "Тоогоор" сонговол ямар ч
 // мөрөнд ЗОГСООЛЫН тоог, "Талбайгаар" сонговол Сууц/ААН-ий өөрийнх нь м²-г авдаг
 // байсан (өөр объектын утга алгаар орж ирдэг АЛДАА байсан). Одоо object_type-аар
 // нь (main/parking/storage) ЗӨВ 2 сонголтыг л харуулна — аль ч СӨХ Зогсоол,
-// Агуулахаа хvссэнээрээ (м²-гээр эсвэл ширхэгээр) чөлөөтэй тохируулж болно.
+// Агуулахаа хүссэнээрээ (м²-гээр эсвэл ширхэгээр) чөлөөтэй тохируулж болно.
 const FEE_OBJECT_UNIT_OPTIONS = {
   main: [ ['main_sqm','Талбайгаар (₮/м²/сар)'], ['main_count','Тоогоор (₮/ш/сар) — 1 нэгж=1'], ['flat','Тогтмол (₮/сар)'] ],
   parking: [ ['parking_sqm','Талбайгаар (₮/м²/сар)'], ['parking_count','Тоогоор (₮/ш/сар)'], ['flat','Тогтмол (₮/сар)'] ],
@@ -294,10 +319,10 @@ function renderFeeCatalogTable(tab) {
   tbody.innerHTML = rows.map(f => {
     const u = FEE_UNIT_LABELS[f.unit_type] || FEE_UNIT_LABELS.flat;
     return `<tr>
-      <td style="font-weight:600">${f.locked?'<span title="Хаягжилт тохиргооны бодит тоот/зогсоол/агуулахтай шууд уяатай тул нэрийг нь засах боломжгvй — тооцооллын арга/хэмжээг чөлөөтэй өөрчилнө" style="margin-right:5px">🔒</span>':''}${esc(f.name)}</td>
+      <td style="font-weight:600">${f.locked?'<span title="Хаягжилт тохиргооны бодит тоот/зогсоол/агуулахтай шууд уяатай тул нэрийг нь засах боломжгүй — тооцооллын арга/хэмжээг чөлөөтэй өөрчилнө" style="margin-right:5px">🔒</span>':''}${esc(f.name)}</td>
       <td><span class="tag ${u.tag}">${u.badge}</span></td>
       <td class="font-mono">${fmtMoney(f.rate)}₮</td>
-      <td>${f.active ? '<span class="tag tag-success">Идэвхтэй</span>' : '<span class="tag" style="background:rgba(100,116,139,0.12);color:var(--text-muted)">Идэвхгvй</span>'}</td>
+      <td>${f.active ? '<span class="tag tag-success">Идэвхтэй</span>' : '<span class="tag" style="background:rgba(100,116,139,0.12);color:var(--text-muted)">Идэвхгүй</span>'}</td>
       <td><div class="flex gap-8">
         <button class="btn btn-ghost btn-sm" style="padding:4px" title="Засах" onclick="openFeeCatalogModal(${f.id},'${tab}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 1 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
         ${f.locked ? '' : `<button class="btn btn-ghost btn-sm" style="padding:4px;color:var(--danger)" title="Устгах" onclick="deleteFeeCatalogRow(${f.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>`}
@@ -312,8 +337,8 @@ function onFeeCatalogUnitTypeChange() {
   document.getElementById('fee-catalog-rate-label').textContent = (FEE_UNIT_LABELS[t]||FEE_UNIT_LABELS.flat).rateLabel;
 }
 function openFeeCatalogModal(id, defaultTab) {
-  if (id && !canWrite('tariff-settings')) { toast('Танд энэ vйлдлийг хийх эрх байхгvй байна','error'); return; }
-  if (!id && !canAdd('tariff-settings')) { toast('Танд энэ vйлдлийг хийх эрх байхгvй байна','error'); return; }
+  if (id && !canWrite('tariff-settings')) { toast('Танд энэ үйлдлийг хийх эрх байхгүй байна','error'); return; }
+  if (!id && !canAdd('tariff-settings')) { toast('Танд энэ үйлдлийг хийх эрх байхгүй байна','error'); return; }
   _feeCatalogEditingId = id || null;
   const f = id ? feeCatalog.find(x=>x.id===id) : null;
   _feeCatalogEditingTab = f ? f.applies_to : (defaultTab || 'resident');
@@ -322,7 +347,7 @@ function openFeeCatalogModal(id, defaultTab) {
   nameInput.value = f ? f.name : '';
   nameInput.disabled = !!(f && f.locked);
   // ⚠️ Мөрийн object_type-д (main/parking/storage/custom) тохирох 3 сонголтыг
-  // (Талбайгаар/Тоогоор/Тогтмол) харуулна — бvгд ЗӨВ физик объектоо ашиглана.
+  // (Талбайгаар/Тоогоор/Тогтмол) харуулна — бүгд ЗӨВ физик объектоо ашиглана.
   const objectType = f ? (f.object_type || 'custom') : 'custom';
   const options = FEE_OBJECT_UNIT_OPTIONS[objectType] || FEE_OBJECT_UNIT_OPTIONS.custom;
   const unitSel = document.getElementById('fee-catalog-unit-type');
@@ -337,7 +362,7 @@ function openFeeCatalogModal(id, defaultTab) {
   openModal('modal-fee-catalog');
 }
 async function saveFeeCatalogRow() {
-  if (!(_feeCatalogEditingId ? canWrite('tariff-settings') : canAdd('tariff-settings'))) { toast('Танд энэ vйлдлийг хийх эрх байхгvй байна','error'); return; }
+  if (!(_feeCatalogEditingId ? canWrite('tariff-settings') : canAdd('tariff-settings'))) { toast('Танд энэ үйлдлийг хийх эрх байхгүй байна','error'); return; }
   const existing = _feeCatalogEditingId ? feeCatalog.find(x=>x.id===_feeCatalogEditingId) : null;
   const name = (existing && existing.locked) ? existing.name : document.getElementById('fee-catalog-name').value.trim();
   if (!name) { toast('Нэрийг оруулна уу','error'); return; }
@@ -367,9 +392,9 @@ async function saveFeeCatalogRow() {
   toast('Хадгалагдлаа ✓','success');
 }
 async function deleteFeeCatalogRow(id) {
-  if (!canDelete('tariff-settings')) { toast('Танд энэ vйлдлийг хийх эрх байхгvй байна','error'); return; }
+  if (!canDelete('tariff-settings')) { toast('Танд энэ үйлдлийг хийх эрх байхгүй байна','error'); return; }
   const f = feeCatalog.find(x=>x.id===id);
-  if (f && f.locked) { toast('Энэ мөрийг устгах боломжгvй — Хаягжилт тохиргооны бодит тоот/зогсоол/агуулахтай шууд уяатай','error'); return; }
+  if (f && f.locked) { toast('Энэ мөрийг устгах боломжгүй — Хаягжилт тохиргооны бодит тоот/зогсоол/агуулахтай шууд уяатай','error'); return; }
   if (!confirm('Энэ төлбөрийг устгах уу? Тооцоолол шууд өөрчлөгдөнө.')) return;
   const { error } = await sb.from('fee_catalog').delete().eq('id', id);
   if (sbErr(error, 'Тарифын каталог устгах')) return;
