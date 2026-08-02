@@ -10,7 +10,7 @@ const REAL_MODULES = [
   { key: 'polls', label: 'СОНГУУЛЬ, САНАЛ АСУУЛГА' },
   { key: 'elevator', label: 'ЛИФТ ДУУДАХ' },
   { key: 'camera', label: 'КАМЕР ХАРАХ' },
-  { key: 'call-log', label: 'СӨХ-ТЭЙ ХАРИЛЦАХ' },
+  { key: 'call-log', label: 'CC MESSENGER' },
   { key: 'useful-contacts', label: 'СӨХ-НЫ ХАЯГ, УТАС, МЭЙЛ, ДАНС' },
   { key: 'emergency-contacts', label: 'ОНЦГОЙ ХЭРЭГЦЭЭТ УТАСНЫ ДУГААРУУД' },
   { key: 'call-service', label: 'ТӨЛБӨРТ ҮЙЛЧИЛГЭЭ' },

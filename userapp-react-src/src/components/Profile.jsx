@@ -79,7 +79,7 @@ async function subscribeToPush(userId) {
 // доорх 10 шинэ өнгөөр бүрэн сольсон (таалагдахгүй байсан тул).
 const BG_COLORS = [
   '#4a4a4a', '#af2c58', '#992c76', '#623396', '#3c3d92',
-  '#016397', '#0559af', '#2f8b67', '#ff0000', '#78bd57',
+  '#016397', '#0559af', '#2f8b67', '#ff8a2b', '#78bd57',
 ];
 
 // Home/Төлбор/Profile tab icon-той ЯГ ИЖИЛ stroke загвар (viewBox 24x24,

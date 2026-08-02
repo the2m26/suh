@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { sb } from '../lib/supabase';
 
-// ⚠️ 2026-07-30: "СӨХ-Д САНАЛ ХүСЭЛТ ИЛГЭЭХ" (энгийн нэг чиглэлийн форм) ->
-// "СӨХ-тэй харилцах" (CC center-той шууд chat/messenger) болж бүрэн дахин
-// бичигдэв. Энэ суваг ЗОРИУДААР Inbox (get_my_notifications)-оос тусгаарлагдсан
-// — notifications.source='cc-center' гэж тэмдэглэгдсэн мөрүүд Inbox-д ОРОХГүй,
-// зөвхөн ЭНД харагдана (Suh.html-ийн "Зар, мэдэгдэл илгээх" хуудаснаас илгээсэн
-// зар/мэдэгдэл/анхааруулга/санамж/нэхэмжлэх ЗӨВХӨН Inbox-т, холилдохгүй).
+// ⚠️ 2026-07-30: "СӨХ-Д САНАЛ ХүСЭЛТ ИЛГЭЭХ" -> "СӨХ-тэй харилцах" -> "CC messenger"
+// (эцсийн нэр) — CC center-той шууд chat/messenger. Inbox-оос ЗОРИУДААР
+// тусгаарлагдсан (notifications.source='cc-center' Inbox-д ОРОХГүй).
+// ⚠️ Дэлгэцийн бүтэн өндрийг (хуудасны scroll-гүйгээр) эзлэхийн тулд, header
+// (.content-page-header)-ийн доод хүрээ, tab-bar (.tab-bar-wrap)-ийн дээд
+// хүрээг БОДИТООР хэмжиж (ResizeObserver/getBoundingClientRect), position:fixed-ээр
+// тэдгээрийн ХООРОНД яг таарч байрлуулна — ХАТУУ тоо ТААМАГЛАХГүй.
 
 function fmtTime(iso) {
   const d = new Date(iso);
@@ -23,8 +24,34 @@ function _ensureTypingChannel() {
   return _typingChannel;
 }
 
+function useFixedBounds() {
+  const [bounds, setBounds] = useState(null);
+  useEffect(() => {
+    function measure() {
+      const header = document.querySelector('.content-page-header');
+      const tabBar = document.querySelector('.tab-bar-wrap');
+      const root = document.getElementById('root');
+      if (!header || !tabBar || !root) return;
+      const headerRect = header.getBoundingClientRect();
+      const tabBarRect = tabBar.getBoundingClientRect();
+      const rootRect = root.getBoundingClientRect();
+      setBounds({
+        top: headerRect.bottom,
+        bottom: window.innerHeight - tabBarRect.top,
+        left: rootRect.left,
+        right: window.innerWidth - rootRect.right,
+      });
+    }
+    measure();
+    window.addEventListener('resize', measure);
+    const id = setInterval(measure, 500); // эхний render үед tab-bar/header хэмжээ өөрчлөгдсөн ч барагдана
+    setTimeout(() => clearInterval(id), 3000);
+    return () => { window.removeEventListener('resize', measure); clearInterval(id); };
+  }, []);
+  return bounds;
+}
+
 export default function CallLog({ profile }) {
-  const [residentId, setResidentId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
@@ -33,6 +60,7 @@ export default function CallLog({ profile }) {
   const typingGateRef = useRef(0);
   const typingHideRef = useRef(null);
   const msgBoxRef = useRef(null);
+  const bounds = useFixedBounds();
 
   async function loadThread(rId) {
     const [{ data: incoming }, { data: outgoing }] = await Promise.all([
@@ -53,10 +81,8 @@ export default function CallLog({ profile }) {
     (async () => {
       const { data: resident } = await sb.from('residents').select('id').eq('apt', profile.apt).maybeSingle();
       const rId = resident?.id || null;
-      setResidentId(rId);
       await loadThread(rId);
 
-      // Realtime: ажилтны хариулт шууд орж ирнэ
       const ch = sb.channel('my-cc-thread-live')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
           const row = payload.new;
@@ -100,44 +126,50 @@ export default function CallLog({ profile }) {
   }
 
   let lastDay = '';
+  const style = bounds
+    ? { position: 'fixed', top: bounds.top, bottom: bounds.bottom, left: bounds.left, right: bounds.right, zIndex: 5 }
+    : { position: 'relative', height: '60vh' }; // хэмжигдэхээс өмнөх түр байдал
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)' }}>
-      <div ref={msgBoxRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, padding: '4px 2px' }}>
-        {!messages.length && <div className="pool-empty">Зурвас алга — доор эхлүүлээрэй</div>}
-        {messages.map((m, i) => {
-          const day = fmtDay(m.at);
-          const showDay = day !== lastDay;
-          lastDay = day;
-          const isOut = m.dir === 'out';
-          return (
-            <div key={i}>
-              {showDay && (
-                <div style={{ alignSelf: 'center', textAlign: 'center', fontSize: 10.5, color: 'var(--text-secondary)', background: 'var(--bg-card)', padding: '3px 12px', borderRadius: 20, margin: '6px auto', width: 'fit-content' }}>{day}</div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '78%', marginLeft: isOut ? 'auto' : 0 }}>
-                <div style={{
-                  padding: '10px 14px', borderRadius: 14, fontSize: 13, lineHeight: 1.5,
-                  background: isOut ? 'var(--accent-dark, var(--accent))' : 'var(--bg-card)',
-                  color: isOut ? '#fff' : 'var(--text-primary)',
-                  border: isOut ? 'none' : '1px solid var(--border-card)',
-                  borderTopRightRadius: isOut ? 4 : 14, borderTopLeftRadius: isOut ? 14 : 4,
-                }}>{m.text}</div>
-                <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 4, padding: '0 4px', textAlign: isOut ? 'right' : 'left' }}>
-                  {fmtTime(m.at)}{!isOut && m.sender ? ' · ' + m.sender : ''}
+    <div style={{ ...style, display: 'flex', flexDirection: 'column', padding: '4px 14px', background: 'var(--bg-page)' }}>
+      <div className="mobile-list-item" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: 0, marginBottom: 10 }}>
+        <div ref={msgBoxRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, padding: '14px 16px' }}>
+          {!messages.length && <div className="pool-empty">Зурвас алга — доор эхлүүлээрэй</div>}
+          {messages.map((m, i) => {
+            const day = fmtDay(m.at);
+            const showDay = day !== lastDay;
+            lastDay = day;
+            const isOut = m.dir === 'out';
+            return (
+              <div key={i}>
+                {showDay && (
+                  <div style={{ textAlign: 'center', fontSize: 10.5, color: 'var(--text-secondary)', background: 'var(--bg-card-alt)', padding: '3px 12px', borderRadius: 20, margin: '6px auto', width: 'fit-content' }}>{day}</div>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '78%', marginLeft: isOut ? 'auto' : 0 }}>
+                  <div style={{
+                    padding: '10px 14px', borderRadius: 14, fontSize: 13, lineHeight: 1.5, textAlign: 'left',
+                    background: isOut ? 'var(--accent-dark, var(--accent))' : 'var(--bg-card-alt)',
+                    color: isOut ? '#fff' : 'var(--text-primary)',
+                    border: isOut ? 'none' : '1px solid var(--border-card)',
+                    borderTopRightRadius: isOut ? 4 : 14, borderTopLeftRadius: isOut ? 14 : 4,
+                  }}>{m.text}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 4, padding: '0 4px', textAlign: isOut ? 'right' : 'left' }}>
+                    {fmtTime(m.at)}{!isOut && m.sender ? ' · ' + m.sender : ''}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+        {staffTyping && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontStyle: 'italic', padding: '2px 16px 8px' }}>СӨХ бичиж байна...</div>}
       </div>
-      {staffTyping && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontStyle: 'italic', padding: '2px 4px' }}>СӨХ бичиж байна...</div>}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', paddingTop: 10 }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'stretch', flexShrink: 0 }}>
         <textarea value={content}
           onChange={e => { setContent(e.target.value); notifyTyping(); }}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
           placeholder="Зурвас бичих..." rows={1}
-          style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 4, padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', resize: 'none', height: 29 }} />
-        <button className="login-btn" style={{ height: 44, width: 'auto', padding: '0 20px' }} onClick={send} disabled={sending}>Илгээх</button>
+          style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 4, padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', resize: 'none', height: 44 }} />
+        <button className="login-btn" style={{ height: 44, width: 'auto', padding: '0 20px', flexShrink: 0 }} onClick={send} disabled={sending}>Илгээх</button>
       </div>
       {error && <div className="login-error">{error}</div>}
     </div>
