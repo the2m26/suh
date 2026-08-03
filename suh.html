@@ -571,6 +571,9 @@
     <div class="nav-item" id="nav-app-settings" onclick="showPage('app-settings')">
       <span>Апп тохиргоо</span>
     </div>
+    <div class="nav-item" id="nav-ai-integration-plan" onclick="showPage('ai-integration-plan')">
+      <span>AI Integration Plan</span>
+    </div>
     <div class="nav-item" id="nav-activity-log" onclick="showPage('activity-log')">
       <span>Протокол</span>
     </div>
@@ -1764,7 +1767,130 @@
       </div>
     </div>
 
-    <!-- #2 ҮЙЛ АЖИЛЛАГААНЫ ТҮҮХ (2026-07-19 нэмэв) — admin-only, activity_log хүснэгэлийг
+    <!-- AI INTEGRATION PLAN (2026-08-02 нэмэв) — санаа/дизайны төлөвлөгөө,
+         функциональ бус лавлах хуудас. 2 таб: AI+CC messenger, AI+Camera. -->
+    <div class="page" id="page-ai-integration-plan">
+      <div class="tabs mb-16" id="ai-plan-tabs">
+        <div class="tab active" onclick="switchAiPlanTab('cc',this)">AI + CC messenger</div>
+        <div class="tab" onclick="switchAiPlanTab('camera',this)">AI + Camera</div>
+        <div class="tab" onclick="switchAiPlanTab('domain',this)">Домайн / Олон хотхон</div>
+      </div>
+
+      <!-- ТАБ 1: AI + CC MESSENGER -->
+      <div id="ai-plan-tab-cc">
+        <div class="card mb-16" style="padding:20px">
+          <div class="section-title" style="margin-bottom:4px">💡 Төлөвлөгөө — амьдралд хараахан хэрэгжээгүй</div>
+          <div style="color:var(--text-muted);font-size:12.5px;margin-bottom:16px">Санаа, дизайны тэмдэглэл (2026-08-02). Ирээдүйд тусдаа шинэ chat session-д хэрэгжүүлэх төлөвлөгөө.</div>
+
+          <h4 style="margin:16px 0 6px">Зорилго</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Ажлын бус цагт ЭСВЭЛ ажилтан X минутын дотор хариулаагүй үед, CC messenger дэх резидентийн асуултад автоматаар AI хариулдаг болгох. Яаралтай/аюулгүй байдлын асуудалд ХЭЗЭЭ Ч оролцохгүй — "Онцгой хэрэгцээт утас" tile хэвээрээ гол зам байна.</p>
+
+          <h4 style="margin:16px 0 6px">Архитектур</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Supabase Edge Function (gate-webhook/send-push-тэй адил зарчим) — Supabase-ийн cloud серверт байнга ажиллана, ГЭДЭГ УЧИР бүх компьютер (админ, ажилтан, резидент) унтраатай байсан ч ажиллана. Гадны LLM (Anthropic/OpenAI г.м) API холбогдох шаардлагатай, key нь Supabase Secrets-д хадгалагдана.</p>
+
+          <h4 style="margin:16px 0 6px">LLM сонголт — Gemini үнэгүй хувилбарын тухай (2026-08-03 нэмэв)</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Танай зорилго ("зөвхөн бэлдсэн мэдээллийн сангаас олж хариулах, ТААМАГЛАХГүй") бол энгийн даалгавар — хамгийн хүчирхэг (мөн үнэтэй) загвар шаардахгүй. <strong>Google Gemini</strong>-ийн хөнгөн хувилбар (жиш нь "Flash") бол Claude/GPT-ээс ялгаатайгаар <strong>тогтмол үнэгүй хувилбартай</strong> (Google AI Studio-гоор, тодорхой хязгаарлалттай) тул энэ ажилд зохимжтой сонголт.</p>
+          <div style="color:var(--warning);font-weight:700;font-size:13px;margin-top:10px">⚠️ Хэрэгжүүлэхээсээ өмнө шалгах 2 зүйл</div>
+          <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
+            <li><strong>Хэрэглээний хязгаар (rate limit)</strong> — үнэгүй хувилбар ихэвчлэн "минутанд/өдөрт хэдэн хүсэлт" гэсэн хязгаартай. Танай үйлчлүүлэгчдийн тоо цөөхөн (нэг СӨХ) тул магадгүй хүрэлцэх байх, гэхдээ хэрэгжүүлэх үед бодит тоог шалгах хэрэгтэй</li>
+            <li><strong>Хувийн мэдээллийн нөхцөл</strong> — резидентийн нэхэмжлэхийн задаргаа (санхүүгийн мэдээлэлтэй ойрхон) үнэгүй үйлчилгээгээр дамжих тул, Google-ийн үнэгүй хувилбарын өгөгдөл ашиглах нөхцөл (жиш нь загвар сургахад ашиглах эсэх) төлбөртэй хувилбараас ӨӨР байж болзошгүй — үүнийг хэрэгжүүлэхээсээ өмнө тодорхой шалгах ёстой</li>
+          </ul>
+
+          <h4 style="margin:16px 0 6px">Эрсдэлийн зэрэглэлээр хамрах хүрээ</h4>
+          <div style="color:var(--success);font-weight:700;font-size:13px;margin-top:10px">🟢 v1-д зөвшөөрөгдсөн (бодит тоо унших/дүгнэх, ТААМАГЛАХГүй)</div>
+          <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
+            <li>Хэрэглэгчийн ӨӨРИЙН нэхэмжлэхийн задаргаа (Payment хуудасны бодит өгөгдөл)</li>
+            <li>Тариф тохиргооны хүчинтэй мэдээлэл (тогтмол, батлагдсан тоо)</li>
+            <li>Мэдээ, мэдээлэл хуудсанд нийтлэгдсэн агуулга хайх/базах</li>
+            <li>СӨХ-ийн орлого/зарлагын ЕРӨНХИЙ ТОЙМ — зөвхөн ОДОО байгаа тоог хэлнэ ("энэ сарын орлого X₮"), "яагаад", "ирээдүйд яах" гэж ТАЙЛБАРЛАХГүй</li>
+          </ul>
+          <div style="color:var(--danger);font-weight:700;font-size:13px;margin-top:14px">🔴 v2-т хойшлуулсан (эрсдэл өндөр тул admin review шаардтай)</div>
+          <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
+            <li>Хянах самбар/зах зээлийн үнэлгээ чартуудыг шинжилж тренд тодорхойлох, сар/улирлаар прогноз хийх — AI шинэ тоон дүгнэлт "зохион бүтээж" байгаа тул буруу гарвал СӨХ-ийн нэр хүнд, хүмүүсийн итгэлд шууд нөлөөлнө. Хэрэгжүүлэх бол зөвхөн admin ЭХЛЭЭД хянаж зөвшөөрсний дараа л резидентэд харуулна (шууд, шүүлтүүргүй биш)</li>
+          </ul>
+
+          <h4 style="margin:16px 0 6px">Шаардлагатай шинэ модуль (жишээ загвар: "Хаалтны тариф")</h4>
+          <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
+            <li>AI идэвхжүүлэх/унтраах үндсэн toggle</li>
+            <li>Ажлын бус цаг (эхлэх/дуусах цаг, амралтын өдрүүд) тохиргоо</li>
+            <li>Хүлээх хугацаа (X минут ажилтан хариулаагүй бол идэвхжинэ)</li>
+            <li>Мэдээллийн сан (Admin-ийн бэлдсэн Асуулт-Хариулт хос, шаардлагатай бол)</li>
+            <li>AI-ийн хариулт бүрт "🤖 Автомат хариу" тодорхой тэмдэглэгээ</li>
+            <li>Хамрах хүрээнээс гадуурх асуулт → шууд "Ажилтантай холбогдоно уу" гэж хариулж, эскалаци хийнэ</li>
+          </ul>
+
+          <h4 style="margin:16px 0 6px">Шийдвэр</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Энэ ажлыг ОДОО (2026-08-02-ний chat session-д) ЭХЛүүЛЭХГүй гэж шийдсэн — context хэтэрхий хуримтлагдсан тул алдаа гаргах эрсдэл өндөр. ШИНЭ, цэвэр chat session дээр л эхлүүлнэ.</p>
+        </div>
+      </div>
+
+      <!-- ТАБ 2: AI + CAMERA -->
+      <div id="ai-plan-tab-camera" style="display:none">
+        <div class="card mb-16" style="padding:20px">
+          <div class="section-title" style="margin-bottom:4px">💡 Санаа — судалгаа хийгээгүй, ХАМААГүй том хэмжээний ажил</div>
+          <div style="color:var(--text-muted);font-size:12.5px;margin-bottom:16px">Санаа, зөвлөмжийн тэмдэглэл (2026-08-02). AI-CC messenger-ээс бүр өөр төрлийн, илүү том хэмжээний ажил гэж үзсэн.</div>
+
+          <h4 style="margin:16px 0 6px">Зорилго (хэрэглэгчийн санаа)</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Камержилт сайтай бол, нийтийн эзэмшлийн талбай/хашаа хаалтыг хянадаг камерт AI холболт хийж, хулгай/осол/гэмтэл таньж, СӨХ ажилтнууд болон хамаатай сууц өмчлөгчдөд SMS/мэйл/CC messenger-ээр автомат дохиолол өгдөг систем.</p>
+
+          <h4 style="margin:16px 0 6px">Яагаад AI-CC messenger-ээс бүр өөр төрлийн ажил вэ</h4>
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px">
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px;color:var(--text-muted)"></td><td style="padding:8px 6px;font-weight:700">AI-CC messenger (текст)</td><td style="padding:8px 6px;font-weight:700">Камерын AI хяналт</td></tr>
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px;color:var(--text-muted)">Технологи</td><td style="padding:8px 6px">Текст ойлгодог LLM</td><td style="padding:8px 6px">Компьютерийн харааны AI (video/image recognition) — бүр өөр төрлийн технологи</td></tr>
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px;color:var(--text-muted)">Дэд бүтэц</td><td style="padding:8px 6px">Зөвхөн код</td><td style="padding:8px 6px">Бодит хатуу техник хэрэгсэл — камерын чанар, сүлжээ, видео стриминг бүгд бэлэн байх ёстой</td></tr>
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px;color:var(--text-muted)">Үнэ</td><td style="padding:8px 6px">Хэрэглээгээрээ бага зардалтай</td><td style="padding:8px 6px">Байнгын, өндөр зардал (олон камер тасралтгүй видео AI боловсруулалт)</td></tr>
+            <tr><td style="padding:8px 6px;color:var(--text-muted)">Хугацаа</td><td style="padding:8px 6px">Хэдэн долоо хоног</td><td style="padding:8px 6px">Хэдэн сар (олон үе шаттай)</td></tr>
+          </table>
+
+          <h4 style="margin:16px 0 6px">Онцгой анхаарах 3 зүйл</h4>
+          <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
+            <li><strong>Нарийвчлал бодит биш байж болзошгүй</strong> — "Хулгай, осол, гэмтэл таних" бол видео AI-ийн хамгийн хүнд ажлуудын нэг, том компаниуд ч 100%-д хүрч чадаагүй. Худал дохиолол их гарвал итгэл алдарна, алдаж таних бол аюулгүй байдлын хүнд асуудал</li>
+            <li><strong>Хууль эрх зүйн асуудал</strong> — "биеийн хэлэмж уншдаг" (biometric-т ойрхон) тасралтгүй хяналт хувийн нууцын эрх зүйн асуудал үүсгэж болзошгүй, Монголын хувийн мэдээллийн хууль тогтоомжийг судлах шаардлагатай</li>
+            <li><strong>Олон системийг холбох</strong> — Камер → AI үйлчилгээ → шүүлтүүр → SMS/мэйл/CC messenger → зөв хүнд чиглүүлэх логик бол олон талт, нарийн интеграцийн ажил</li>
+          </ul>
+
+          <h4 style="margin:16px 0 6px">Санал</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Үүнийг тусад нь, өөрийн гүнзгий судалгаа+төлөвлөгөөтэй тусгай chat session-д (бүр AI-CC messenger-ээс ч илүү тусад нь) авч үзэх — учир нь шийдвэрлэх зүйл (техник хэрэгслийн сонголт, үйлчилгээ үзүүлэгч, зардал, хууль эрх зүй) код бичихээс ч илүү их.</p>
+        </div>
+      </div>
+
+      <!-- ТАБ 3: ДОМАЙН / ОЛОН ХОТХОН -->
+      <div id="ai-plan-tab-domain" style="display:none">
+        <div class="card mb-16" style="padding:20px">
+          <div class="section-title" style="margin-bottom:4px">💡 Санаа — домайн бүртгүүлэх, олон хотхонд үйлчилгээ үзүүлэх загварын тухай</div>
+          <div style="color:var(--text-muted);font-size:12.5px;margin-bottom:16px">Санаа, зөвлөмжийн тэмдэглэл (2026-08-03).</div>
+
+          <h4 style="margin:16px 0 6px">Домайн шилжилт — 2 хувилбар</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6"><strong>Хувилбар А (замын бүтэц хэвээр, жиш нь domain.mn/suh/...):</strong> Кодод бараг ямар ч өөрчлөлт хийх шаардлагагүй — suh.html болон дагалдах .js файлууд бүгд relative зам ашигладаг тул хавтасны бүтэц хэвээр байвал бүх зам зөв үргэлжлэн ажиллана. Зөвхөн DNS/GitHub Pages custom domain тохиргоо (hosting тал) хийхэд хүрэлцэнэ.</p>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6"><strong>Хувилбар Б (домайн ROOT нь suh.html болно, "/suh/" prefix арилна):</strong> userapp-react-тэй холбоотой 3 газарт код засах шаардлагатай (Service Worker/PWA-д абсолют зам заавал хэрэгтэй тул): <code class="inline">vite.config.js</code>-ийн <code class="inline">base</code>, Profile.jsx-ийн Service Worker бүртгэлийн зам, <code class="inline">manifest.json</code>-ий start_url/scope. Нэмээд Supabase Auth/CORS-ийн зөвшөөрөгдсөн домайны жагсаалт шалгах хэрэгтэй (Storage-ийн URL-үүд Supabase-ийн ӨӨРИЙН домайн ашигладаг тул хүрэхгүй).</p>
+
+          <h4 style="margin:16px 0 6px">Олон хотхонд үйлчилгээ үзүүлэх загвар — уян хатан байдал</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Одоогийн бүтэц: хотхон бүр = бүрэн тусдаа GitHub repo + Supabase project (schema-only clone). Энэ нь <strong>дунд зэрэг уян хатан</strong> — жинхэнэ олон үйлчлүүлэгчид зэрэг үйлчилдэг (multi-tenant) SaaS загвар БИШ.</p>
+          <div style="color:var(--success);font-weight:700;font-size:13px;margin-top:10px">✅ Давуу тал</div>
+          <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
+            <li>Өгөгдлийн тусгаарлалт маш сайн — нэг хотхоны алдаа/буг нөгөөд нөлөөлөхгүй</li>
+            <li>Ойлгоход энгийн — олон талт "tenant filtering" логик хэрэггүй</li>
+            <li>Аль хэдийн туршигдсан, давтагдах процесс</li>
+          </ul>
+          <div style="color:var(--danger);font-weight:700;font-size:13px;margin-top:14px">🔴 Сул тал — олон хотхонд өргөтгөх үед</div>
+          <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
+            <li>Ажиллагааны ачаалал шугаман нэмэгддэг — шинэ засвар бүрийг хотхон бүрийн repo/Supabase project-д ГАРААР дахин хэрэгжүүлэх ёстой</li>
+            <li>Нэгдсэн удирдлагын самбар (бүх хотхоныг нэг дороос харах "super-admin" систем) байхгүй</li>
+            <li>Зардал шугаман нэмэгддэг — хотхон бүр өөрийн тθлбθртэй Supabase tier шаардана</li>
+          </ul>
+
+          <h4 style="margin:16px 0 6px">Ирээдүйн 2 боломжит зам</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6"><strong>Одоогийн (clone-based)</strong> загвар: цөөн тооны (~5-15) хотхонд тохиромжтой, хэвээр үргэлжлүүлж болно.</p>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6"><strong>Жинхэнэ multi-tenant</strong> загвар: НЭГ codebase, НЭГ Supabase project, бүх хүснэгэлд <code class="inline">hoa_id</code> багана нэмж тусгаарлана — олон (50+) хотхон, автомат масштаблах шаардлагатай үед л тохиромжтой. Энэ бол маш том дахин зохион байгуулалт (40 гаруй хүснэгэл бүрт tenant_id нэмэх, RLS дахин бичих) — тусгайлан төлөвлөсөн, тусдаа chat session-д хийх ёстой ажил.</p>
+
+          <h4 style="margin:16px 0 6px">Санал</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Одоохондоо домайноо бүртгүүлээд, "Хувилбар А" (relative зам хадгалагдсан) хэлбэрээр орох нь хамгийн зүйтэй — олон хотхонд өргөтгөх шийдвэрийг бодит үйлчлүүлэгчийн тоо гарсны дараа, шаардлагатай үед нь авч үзэх.</p>
+        </div>
+      </div>
+    </div>
+
+
+2 ҮЙЛ АЖИЛЛАГААНЫ ТҮҮХ (2026-07-19 нэмэв) — admin-only, activity_log хүснэгэлийг
          уншина. Хамаарал: db.js-ийн logActivity()/renderActivityLogPage(). -->
     <div class="page" id="page-activity-log">
       <div class="card mb-16" style="padding:20px">
@@ -2322,7 +2448,7 @@ where category='invoice' and sent_at >= 'YYYY-MM-01' and sent_at < 'дараа �
             <input type="text" id="fee-catalog-name" placeholder="жиш: Ашиглалтын зардал">
           </div>
           <div id="fee-catalog-lock-note" style="display:none;font-size:11.5px;color:var(--text-muted);background:var(--bg-surface);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:14px">
-            🔒 Энэ мөрийн нэр "Тоот, зогсоол, агуулах" хуудасны бодит бvртгэлтэй шууд уяатай тул засах боломжгvй — Тооцооллын арга/Хэмжээг чөлөөтэй өөрчилнө.
+            🔒 Энэ мөрийн нэр "Тоот, зогсоол, агуулах" хуудасны бодит бүртгэлтэй шууд уяатай тул засах боломжгүй — Тооцооллын арга/Хэмжээг чөлөөтэй өөрчилнө.
           </div>
           <div class="form-group">
             <label>Тооцооллын арга</label>
@@ -4610,7 +4736,7 @@ let notifications = [
 // ============================================================
 // Хуудасны нэр -> Монгол гарчиг. showPage() болон Хэрэглэгчийн удирдлагын "Онлайн" багана
 // хоёулаа нэг эх сурвалжийг ашиглана — давхардуулахгүйн тулд эндэ нэг л газар тодорхойлов.
-const PAGE_LABELS = {dashboard:'Хянах самбар',residents:'Сууц өмчлөгчийн бүртгэл',business:'Аж ахуйн нэгж бүртгэл',clientele:'Харилцагчийн бүртгэл',finance:'Гүйлгээний бүртгэл',assets:'Үндсэн хөрөнгө бүртгэл',payments:'Төлбөр төлөлт',apartments:'Тоот, зогсоол, агуулах',reports:'СӨХ дотоод тайлан',fintax:'Санхүү, татварын тайлан',communications:'Зар, мэдэгдэл илгээх','cc-center':'CC center','gate-log':'Хаалтны удирдлага','news':'Мэдээ, мэдээлэл','newseditor':'Мэдээний агрегат',admin:'Хаягжилт тохиргоо','sokh-settings':'СӨХ тохиргоо','tariff-settings':'Тариф тохиргоо','market-valuation':'Зах зээлийн үнэлгээ',auth_levels:'Хандах эрхийн тохиргоо',users:'Хэрэглэгч удирдлага',polls:'Сонгууль, санал асуулга',accounting:'Нягтлан бодох бүртгэл','nbb-settings':'НББ тохиргоо','asset-settings':'Үндсэн хөрөнгө тохиргоо',employees:'Ажилтны бүртгэл','app-settings':'Апп тохиргоо'};
+const PAGE_LABELS = {dashboard:'Хянах самбар',residents:'Сууц өмчлөгчийн бүртгэл',business:'Аж ахуйн нэгж бүртгэл',clientele:'Харилцагчийн бүртгэл',finance:'Гүйлгээний бүртгэл',assets:'Үндсэн хөрөнгө бүртгэл',payments:'Төлбөр төлөлт',apartments:'Тоот, зогсоол, агуулах',reports:'СӨХ дотоод тайлан',fintax:'Санхүү, татварын тайлан',communications:'Зар, мэдэгдэл илгээх','cc-center':'CC center','gate-log':'Хаалтны удирдлага','news':'Мэдээ, мэдээлэл','newseditor':'Мэдээний агрегат',admin:'Хаягжилт тохиргоо','sokh-settings':'СӨХ тохиргоо','tariff-settings':'Тариф тохиргоо','market-valuation':'Зах зээлийн үнэлгээ',auth_levels:'Хандах эрхийн тохиргоо',users:'Хэрэглэгч удирдлага',polls:'Сонгууль, санал асуулга',accounting:'Нягтлан бодох бүртгэл','nbb-settings':'НББ тохиргоо','asset-settings':'Үндсэн хөрөнгө тохиргоо',employees:'Ажилтны бүртгэл','app-settings':'Апп тохиргоо','ai-integration-plan':'AI Integration Plan'};
 function showPage(name) {
   // Эрхийн шалгалт — эрхгүй хуудсыг нээхээс сэргийлнэ (зөвхөн naү-г нуухаас гадна)
   if(typeof canAccessPage === 'function' && !canAccessPage(name)) {
@@ -5218,7 +5344,7 @@ async function generateReport(type) {
     title.textContent=`Орлогын тайлан — ${selYear} оны ${selMonth}-р сар`;
     const monthTx = transactions.filter(t=>t&&t.type==='income'&&t.month===selMonth&&t.year===selYear);
     const total = monthTx.reduce((s,t)=>s+t.amount,0);
-    // ⚠️ 2026-07-26 засав: "Хvлээгдэж буй орлого"/"Нийт тоот" өмнө ЗӨВХӨН
+    // ⚠️ 2026-07-26 засав: "Хүлээгдэж буй орлого"/"Нийт тоот" өмнө ЗӨВХӨН
     // residents-ээс тооцдог байсан тул ААН-ийн орлогыг тооцоход "Цуглуулалтын
     // хувь" зохиомлоор өндөр гарч байсан — businesses-ийг ч мөн нэмж тооцно.
     const expectedRes = residents.reduce((s,r)=>s+calcFee(r),0);
@@ -5260,7 +5386,7 @@ async function generateReport(type) {
   } else if(type==='debt') {
     title.textContent=`Өр авлагын тайлан — ${selYear} оны ${selMonth}-р сар`;
     // ⚠️ 2026-07-26 засав: Энэ тайлан өмнө ЗӨВХӨН residents-ээс тооцдог байсан
-    // тул ААН хугацаа хэтэрсэн ч энд огт харагддаггvй байсан — "aging" тайланд
+    // тул ААН хугацаа хэтэрсэн ч энд огт харагддаггүй байсан — "aging" тайланд
     // аль хэдийн ашигласан зөв загвараар (residents+businesses хоёуланг) нэгтгэв.
     const paidApts = transactions.filter(t=>t&&t.type==='income'&&t.category==='resident'&&t.month===selMonth&&t.year===selYear).map(t=>String(t.apt));
     const paidBizIds = transactions.filter(t=>t&&t.type==='income'&&t.category==='business'&&t.month===selMonth&&t.year===selYear).map(t=>t.businessId);
@@ -5716,7 +5842,7 @@ const ROLE_LABELS = {
   mn:'Менежер', ot:'Сууц өмчлөгч'
 };
 // Зөвхөн admin-д харагдах nav items
-const ADMIN_ONLY_PAGES = ['admin', 'tariff-settings', 'market-valuation', 'auth_levels', 'users', 'nbb-settings', 'asset-settings', 'sokh-settings', 'app-settings', 'activity-log'];
+const ADMIN_ONLY_PAGES = ['admin', 'tariff-settings', 'market-valuation', 'auth_levels', 'users', 'nbb-settings', 'asset-settings', 'sokh-settings', 'app-settings', 'activity-log', 'ai-integration-plan'];
 // Нэвтрэх шаардлагагүй хуудас байхгүй — бүгд нэвтэрсэн байх ёстой
 
 let currentUser = null;      // Supabase auth user
@@ -6380,6 +6506,14 @@ function toast(msg, type='success') {
   el.textContent=msg;
   document.getElementById('toast').appendChild(el);
   setTimeout(()=>el.remove(),3500);
+}
+// AI Integration Plan хуудасны 2 табыг сольдог энгийн функц (2026-08-02 нэмэв)
+function switchAiPlanTab(name, el) {
+  document.getElementById('ai-plan-tab-cc').style.display = name === 'cc' ? 'block' : 'none';
+  document.getElementById('ai-plan-tab-camera').style.display = name === 'camera' ? 'block' : 'none';
+  document.getElementById('ai-plan-tab-domain').style.display = name === 'domain' ? 'block' : 'none';
+  document.querySelectorAll('#ai-plan-tabs .tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
 }
 // ============================================================
 // INIT
