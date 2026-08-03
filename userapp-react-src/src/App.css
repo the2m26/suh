@@ -7,39 +7,9 @@ input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus
    dot icon-той нийцүүлэв. */
 .range-bw,.range-bt{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:transparent;cursor:pointer}
 .range-bw::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(to right,#000,#fff)}
-.range-bt::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(to right,#000,transparent)}
+.range-bt::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(to right,#000,transparent),repeating-conic-gradient(#8888 0% 25%,#4448 0% 50%) 0 0/10px 10px}
 .range-bw::-moz-range-track,.range-bt::-moz-range-track{height:6px;border-radius:3px}
 .range-bw::-moz-range-track{background:linear-gradient(to right,#000,#fff)}
-.range-bt::-moz-range-track{background:linear-gradient(to right,#000,transparent)}
+.range-bt::-moz-range-track{background:linear-gradient(to right,#000,transparent),repeating-conic-gradient(#8888 0% 25%,#4448 0% 50%) 0 0/10px 10px}
 .range-bw::-webkit-slider-thumb,.range-bt::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:1px solid #0006;margin-top:-5px;box-shadow:0 1px 3px #0000004d}
 .range-bw::-moz-range-thumb,.range-bt::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:1px solid #0006;box-shadow:0 1px 3px #0000004d}
-
-/* ⚠️ 2026-08-03 нэмэв: Профайлын хар↔цагаан/тунгалаг слайдерүүд (bg_tint,
-   card_tint, card_transparency) browser-ийн native accent-color (цэнхэр)
-   ашигладаг байсныг олж, бүрэн custom track gradient болгов — үүнийг
-   accent-color ганц өнгө л дэмждэг тул (gradient дэмждэггүй) native
-   стайлыг бүрэн арилгаж дахин зурав. */
-.range-bw, .range-bt {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  border-radius: 2px;
-  outline: none;
-  background: transparent;
-}
-.range-bw::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, #000, #fff); }
-.range-bt::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, #000, transparent); }
-.range-bw::-moz-range-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, #000, #fff); }
-.range-bt::-moz-range-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, #000, transparent); }
-.range-bw::-webkit-slider-thumb, .range-bt::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px; height: 16px; border-radius: 50%;
-  background: #fff; border: 1px solid #0000004d;
-  box-shadow: 0 1px 3px #0000004d;
-  margin-top: -6px;
-}
-.range-bw::-moz-range-thumb, .range-bt::-moz-range-thumb {
-  width: 16px; height: 16px; border-radius: 50%;
-  background: #fff; border: 1px solid #0000004d;
-  box-shadow: 0 1px 3px #0000004d;
-}
