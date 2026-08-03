@@ -278,23 +278,23 @@ export default function Profile({ profile, user, onProfileUpdate }) {
             {(profile.bg_image_url || profile.bg_color) && (
               <div className="profile-card-tint-row">
                 <span className="tint-dot tint-dot-black" />
-                <input type="range" min="-50" max="50" value={profile.bg_tint ?? 0} onChange={e => setBgTint(+e.target.value)} />
+                <input type="range" className="range-bw" min="-50" max="50" value={profile.bg_tint ?? 0} onChange={e => setBgTint(+e.target.value)} />
                 <span className="tint-dot tint-dot-white" />
               </div>
             )}
             <div className="profile-card-tint-row">
               <span className="tint-dot tint-dot-black" />
-              <input type="range" min="-50" max="50" value={profile.card_tint ?? 0} onChange={e => setCardTint(+e.target.value)} />
+              <input type="range" className="range-bw" min="-50" max="50" value={profile.card_tint ?? 0} onChange={e => setCardTint(+e.target.value)} />
               <span className="tint-dot tint-dot-white" />
             </div>
             <div className="profile-card-tint-row">
               <span className="tint-dot tint-dot-solid" />
-              <input type="range" min="0" max="90" value={profile.card_transparency ?? 0} onChange={e => setCardTransparency(+e.target.value)} />
+              <input type="range" className="range-bt" min="0" max="90" value={profile.card_transparency ?? 0} onChange={e => setCardTransparency(+e.target.value)} />
               <span className="tint-dot tint-dot-hollow" />
             </div>
             <div className="profile-card-tint-row">
               <span className="tint-dot" style={{ background: '#000000' }} />
-              <input type="range" min="0" max="255" value={profile.card_border_gray ?? 30} onChange={e => setCardBorderGray(+e.target.value)} />
+              <input type="range" className="range-bw" min="0" max="255" value={profile.card_border_gray ?? 30} onChange={e => setCardBorderGray(+e.target.value)} />
               <span className="tint-dot" style={{ background: '#ffffff', border: '1px solid var(--border-card)' }} />
             </div>
           </div>
