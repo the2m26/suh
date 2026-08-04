@@ -44,7 +44,28 @@
     display: flex; flex-direction: column;
     position: fixed; left: 0; top: 0; bottom: 0; z-index: 100;
     overflow: hidden;
+    transition: transform .22s ease;
   }
+  /* ⚠️ 2026-08-04 нэмэв: Дэлгэц нарийсахад sidebar автоматаар "хавчигдаж тал
+     дүрс" болдог асуудлыг гар аргаар хураах/нээх товчтой болгож шийдэв —
+     translateX(-100%) ашигласан тул 900px breakpoint (48px өргөнтэй) үед ч
+     зөв бүрэн нуугдана (тогтмол px биш, харьцангуй). */
+  body.sidebar-collapsed .sidebar { transform: translateX(-100%); }
+  body.sidebar-collapsed .main { margin-left: 0 !important; }
+  .sidebar-toggle {
+    position: fixed; top: 50%; left: 200px; z-index: 101;
+    width: 20px; height: 40px;
+    background: #0B1A2E; border: 1px solid rgba(30,58,95,0.6); border-left: none;
+    border-radius: 0 6px 6px 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #64748B; cursor: pointer;
+    transform: translateY(-50%);
+    transition: left .22s ease, color .12s, background .12s;
+  }
+  .sidebar-toggle:hover { color: #CBD5E1; background: rgba(30,58,95,0.7); }
+  .sidebar-toggle svg { width: 12px; height: 12px; transition: transform .22s ease; }
+  body.sidebar-collapsed .sidebar-toggle { left: 0; }
+  body.sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
   .logo {
     padding: 10px 14px 8px;
     border-bottom: 1px solid rgba(30,58,95,0.5);
@@ -88,7 +109,7 @@
   .building-info strong { color: #94A3B8; font-size: 11px; display:block; margin-bottom:1px; }
 
   /* MAIN */
-  .main { margin-left: 200px; flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+  .main { margin-left: 200px; flex: 1; min-height: 100vh; display: flex; flex-direction: column; transition: margin-left .22s ease; }
   /* MONTH PAYMENT BADGE */
   .month-badges { display:flex; gap:3px; flex-wrap:nowrap; }
   .mbadge { width:20px; height:20px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; cursor:default; flex-shrink:0; }
@@ -274,6 +295,8 @@
     .nav-item { justify-content: center; padding: 10px; }
     .badge { display: none; }
     .main { margin-left: 48px; }
+    .sidebar-toggle { left: 48px; }
+    body.sidebar-collapsed .sidebar-toggle { left: 0; }
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
     .form-row, .form-row-3 { grid-template-columns: 1fr; }
@@ -290,6 +313,7 @@
   }
   @media (max-width: 600px) {
     .sidebar { display: none; }
+    .sidebar-toggle { display: none; }
     .main { margin-left: 0; }
     .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
     .content { padding: 14px; }
@@ -478,6 +502,9 @@
   <div style="color:#94A3B8;font-size:14px">Өгөгдөл ачаалж байна...</div>
 </div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+<button class="sidebar-toggle" onclick="toggleSidebar()" title="Sidebar хураах/нээх">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+</button>
 <aside class="sidebar">
   <div class="logo">
     <div class="logo-top">suh</div>
@@ -1554,16 +1581,19 @@
          Хуучин "CC center" одоо "Зар, мэдэгдэл илгээх" нэртэй, "Ирсэн" таб нь
          энэ хуудсаар орлогдож устгагдсан) -->
     <div class="page" id="page-cc-center">
-      <div style="display:flex;height:calc(100vh - 48px);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+      <!-- ⚠️ 2026-08-04 засав: өмнө зөвхөн topbar-ийн өндөр (48px)-ийг хассан байсан,
+           .content-ийн дээд/доод padding (24px+24px=48px)-ийг тооцоогүй байсан тул
+           картны доод ирмэг яг topbar-ийн өндрүүдийн зөрүүгээр дэлгэцнээс гарч
+           байсан — 96px (48+48) хасаж бүрэн зөв тооцоолол болгов. -->
+      <div style="display:flex;height:calc(100vh - 96px);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
         <!-- Зүүн: харилцагчийн жагсаалт -->
         <div style="width:300px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-surface);display:flex;flex-direction:column">
           <div style="padding:12px;border-bottom:1px solid var(--border);display:flex;gap:8px">
             <select id="cc-status-filter" onchange="renderCCThreadList()" style="width:auto;flex-shrink:0">
               <option value="all">All</option>
               <option value="muted">Muted</option>
-              <option value="solved">Solved</option>
-              <option value="unsolved">Unsolved</option>
               <option value="urgent">Urgent</option>
+              <option value="unread">Unread</option>
             </select>
             <input type="text" id="cc-search" placeholder="🔍 Тоот, нэрээр хайх..." oninput="renderCCThreadList()" style="width:100%">
           </div>
@@ -1876,7 +1906,7 @@
           <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
             <li>Ажиллагааны ачаалал шугаман нэмэгддэг — шинэ засвар бүрийг хотхон бүрийн repo/Supabase project-д ГАРААР дахин хэрэгжүүлэх ёстой</li>
             <li>Нэгдсэн удирдлагын самбар (бүх хотхоныг нэг дороос харах "super-admin" систем) байхгүй</li>
-            <li>Зардал шугаман нэмэгддэг — хотхон бүр өөрийн тθлбθртэй Supabase tier шаардана</li>
+            <li>Зардал шугаман нэмэгддэг — хотхон бүр өөрийн төлбөртэй Supabase tier шаардана</li>
           </ul>
 
           <h4 style="margin:16px 0 6px">Ирээдүйн 2 боломжит зам</h4>
@@ -4708,8 +4738,17 @@ where category='invoice' and sent_at >= 'YYYY-MM-01' and sent_at < 'дараа �
 
 <script>
 // --- NOTIFICATIONS ---
+// ⚠️ 2026-08-04 засав: CC center-ийн харилцаа (source='cc-center') энэ глобал
+// массивд орж, "Зар, мэдэгдэл илгээх"→"Илгээсэн" таб (мөн жилийн шүүлтүүр)-д
+// давхар харагддаг байсныг эх сурвалж дээрээ шүүж арилгав — CC center өөрийн
+// thread-үүдийг тусдаа шууд query-ээр (cccenter.js) татдаг тул энд орох
+// шаардлагагүй, "албан ёсны зар мэдэгдэл" биш.
+// ⚠️ .neq('source','cc-center') ганцаараа ХЭРЭГЛЭХГүЙ — Postgres-т NULL <> 'x'
+// үр дүн нь NULL (false биш) тул source=NULL мөрүүдийг Ч мөн ХАСНА (ирээдүйд
+// source тавихаа мартсан шинэ мэдэгдэл алга болох эрсдэлтэй). Тиймээс
+// .or()-оор NULL-ийг тусад нь илэрхий зөвшөөрнө.
 async function db_loadNotifications() {
-  const {data,error} = await sb.from('notifications').select('*').order('id',{ascending:false});
+  const {data,error} = await sb.from('notifications').select('*').or('source.neq.cc-center,source.is.null').order('id',{ascending:false});
   if(error){console.error('notifications load error:', JSON.stringify(error), error.message);return;}
   if(!data){console.error('notifications: data null');return;}
   notifications = data;
@@ -6558,9 +6597,39 @@ function updateSidebarCount() {
   const el2 = document.getElementById('sidebar-partner-count');
   if(el2) el2.textContent = 'Харилцагч байгууллага · ' + clientele.length.toLocaleString();
 }
+// ⚠️ 2026-08-04 нэмэв: Sidebar-ыг гар аргаар хураах/нээх (дэлгэц нарийсахад
+// автоматаар "хавчигдаж тал дүрс" болдгийг шийдэх зорилготой). Төлөв
+// localStorage-д хадгалагдаж, дараагийн ачаалалт үед сэргэнэ.
+// ⚠️ 2026-08-04 засав (3): Өмнөх хувилбарт хэрэглэгч ГАР АРГААР НЭЭСНИЙ ДАРАА
+// дэлгэц улам нарийсвал ЧАДДАГГүй (хавчигдана!) байсан — учир нь товч дарахад
+// "manual override" бүх автомат логикийг бүрмөсөн унтраадаг байв. Одоо
+// 900px-ээс нарийсах үед ЯМАР Ч үед (хэрэглэгчийн өмнөх сонголтоос үл
+// хамааран) АЮУЛГүй БАЙДЛЫН зарчмаар автоматаар хураана — учир нь энэ
+// автомат логикийн цорын ганц зорилго "хавчигдахаас сэргийлэх" тул хэрэглэгчийн
+// "нээх" сонголт зөвхөн өргөн зай байгаа (>900px) үед л хүчинтэй байна.
+let _sidebarManualOverride = false;
+function toggleSidebar() {
+  _sidebarManualOverride = true;
+  document.body.classList.toggle('sidebar-collapsed');
+  try { localStorage.setItem('suh_sidebar_collapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '0'); } catch(e) {}
+}
+function _autoSidebarByWidth() {
+  if (window.innerWidth <= 900) { document.body.classList.add('sidebar-collapsed'); return; }
+  if (_sidebarManualOverride) return; // өргөн зайтай үед л хэрэглэгчийн сонголтыг хүндэтгэнэ
+  document.body.classList.remove('sidebar-collapsed');
+}
+window.addEventListener('resize', _autoSidebarByWidth);
 document.addEventListener('DOMContentLoaded', async ()=>{
   document.getElementById('exp-date').value = todayStr();
   loadRememberedEmail();
+  try {
+    const saved = localStorage.getItem('suh_sidebar_collapsed');
+    if (saved !== null) {
+      _sidebarManualOverride = true;
+      if (saved === '1') document.body.classList.add('sidebar-collapsed');
+    }
+  } catch(e) {}
+  _autoSidebarByWidth(); // одоогийн өргөнийг заавал шалгаж, нарийн бол saved-ээс үл хамааран хураана
   // Session шалгах — нэвтэрсэн байвал шууд ачаална
   await checkExistingSession();
 });

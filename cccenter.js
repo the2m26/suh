@@ -56,11 +56,17 @@ function _ccSetupRealtime() {
     // ⚠️ 2026-07-30 нэмэв: ӨӨР ажилтан (өөр browser/session-оос) ЯГ ЭНЭ resident-д
     // хариу илгээхэд, миний дэлгэц дээр ч шууд харагдана — ингэснээр 2 ажилтан
     // зэрэг харилцаж, давхардсан/зөрчилтэй хариу илгээх эрсдэлээс сэргийлнэ.
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+    // ⚠️ 2026-08-04 засав: source!=='cc-center' шүүлтүүр нэмэв (өөр төрлийн
+    // single-recipient мэдэгдэл — жишээ нь төлбөрийн сануулга — CC жагсаалтад
+    // орохоос сэргийлнэ), мөн loadCCThreadList() дуудаж ШИНЭ (feedback_requests-гүй)
+    // харилцааг ч зүүн жагсаалтад шууд (realtime) гаргадаг болгов.
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, async (payload) => {
       const row = payload.new;
-      if (row.recipient_kind !== 'resident' || row.recipient_filter !== 'specific') return;
+      if (row.source !== 'cc-center' || row.recipient_kind !== 'resident' || row.recipient_filter !== 'specific') return;
       const resident = residents.find(x => x.id === row.recipient_specific_id);
-      if (!resident || String(_ccActiveApt) !== String(resident.apt)) return;
+      if (!resident) return;
+      await loadCCThreadList();
+      if (String(_ccActiveApt) !== String(resident.apt)) return;
       // Миний ӨӨРИЙН sendCCReply()-ээс аль хэдийн нэмэгдсэн зурвасыг давхар нэмэхгүй
       if (_ccActiveMessages.some(m => m.dir === 'out' && m.at === row.sent_at && m.text === row.content)) return;
       _ccActiveMessages.push({ dir: 'out', text: row.content, at: row.sent_at, sender: row.sender_name });
@@ -104,14 +110,19 @@ function notifyCCTyping(apt) {
 }
 
 async function loadCCThreadList() {
-  const [{ data: feedback, error }, { data: statuses }] = await Promise.all([
+  const [{ data: feedback, error }, { data: outgoing, error: outErr }, { data: statuses }] = await Promise.all([
     sb.from('feedback_requests').select('*').order('created_at', { ascending: false }),
+    // ⚠️ 2026-08-04 нэмэв: Admin-аас ЭХЭЛСЭН (резидентээс ирсэн зурвасгүй) харилцааг
+    // мөн жагсаалтад оруулахын тулд — өмнө зөвхөн feedback_requests-ээс төлөв
+    // үүсгэдэг байсан тул ийм харилцагч зүүн жагсаалтад ОГТ ХАРАГДДАГГүй байсан.
+    sb.from('notifications').select('*').eq('source', 'cc-center').eq('recipient_kind', 'resident').eq('recipient_filter', 'specific').order('sent_at', { ascending: false }),
     sb.from('cc_thread_status').select('*'),
   ]);
   if (error) { console.error('feedback_requests ачаалахад алдаа:', error.message); return; }
+  if (outErr) { console.error('notifications (cc-center) ачаалахад алдаа:', outErr.message); }
 
   _ccStatuses = {};
-  (statuses || []).forEach(s => { _ccStatuses[String(s.apt)] = { muted: s.muted, solved: s.solved, urgent: s.urgent }; });
+  (statuses || []).forEach(s => { _ccStatuses[String(s.apt)] = { muted: s.muted, urgent: s.urgent }; });
 
   const byApt = {};
   (feedback || []).forEach(f => {
@@ -121,13 +132,21 @@ async function loadCCThreadList() {
     if (f.status === 'new') byApt[key].unread++;
   });
 
+  (outgoing || []).forEach(n => {
+    const resident = residents.find(x => x.id === n.recipient_specific_id);
+    if (!resident) return;
+    const key = String(resident.apt);
+    if (!byApt[key]) byApt[key] = { apt: resident.apt, lastText: n.content, lastAt: n.sent_at, unread: 0 };
+    else if (new Date(n.sent_at) > new Date(byApt[key].lastAt)) { byApt[key].lastText = n.content; byApt[key].lastAt = n.sent_at; }
+  });
+
   _ccThreads = Object.values(byApt).sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
   renderCCThreadList();
   updateCCBadge();
 }
 
 function _ccGetStatus(apt) {
-  return _ccStatuses[String(apt)] || { muted: false, solved: false, urgent: false };
+  return _ccStatuses[String(apt)] || { muted: false, urgent: false };
 }
 
 function _ccResidentLabel(apt) {
@@ -163,19 +182,34 @@ function renderCCThreadList() {
     }
     const st = _ccGetStatus(t.apt);
     if (statusFilter === 'muted' && !st.muted) return false;
-    if (statusFilter === 'solved' && !st.solved) return false;
-    if (statusFilter === 'unsolved' && st.solved) return false;
     if (statusFilter === 'urgent' && !st.urgent) return false;
+    if (statusFilter === 'unread' && !(t.unread > 0)) return false;
     return true;
   });
   if (!list.length) { container.innerHTML = '<div class="empty-state" style="padding:20px 14px;color:var(--text-muted);font-size:12.5px">Санал, хүсэлт алга</div>'; return; }
 
-  container.innerHTML = list.map(t => `
+  container.innerHTML = list.map(t => {
+    const st = _ccGetStatus(t.apt);
+    // ⚠️ 2026-08-04 засав: Solved/Unsolved тэмдэглэгээ бүрмөсөн устгав (CC center
+    // бол зөвхөн харилцах суваг — "шийдвэрлэлт" тэмдэглэх дамий гэж үзсэн).
+    // Muted/Urgent хоёрхон төлөв үлдэв, дараах байдлаар илэрхийлнэ:
+    //   Urgent → avatar-ийн дугуй хүрээ УЛААН
+    //   Muted  → avatar дотор, инициаль үсгийн УРД ТАЛД диаметрийн 70% хэмжээтэй
+    //             тунгалаг фонтой саарал SVG icon (badge/overlay-г БүХ хүлээж үзсэний
+    //             дараа үүнийг сонгосон — хүрээнд хүрдэггүй, бүдгэрүүлдэггүй, тод харагдана)
+    const avatarBorder = st.urgent ? 'border:1px solid var(--danger)' : 'border:1px solid var(--border-light)';
+    const muteIcon = st.muted ? `<div title="Muted" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+    </div>` : '';
+    return `
     <div class="cc-thread-item" data-apt="${t.apt}" onclick="selectCCThread('${t.apt}')"
       style="display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;position:relative;${String(_ccActiveApt) === String(t.apt) ? 'background:var(--accent-glow);border-left:3px solid var(--accent);padding-left:11px' : ''}">
-      <div style="width:38px;height:38px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0">${esc(_ccInitials(t.apt))}</div>
+      <div style="position:relative;width:38px;height:38px;flex-shrink:0">
+        <div style="width:38px;height:38px;border-radius:50%;background:var(--bg-card);${avatarBorder};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent)">${esc(_ccInitials(t.apt))}</div>
+        ${muteIcon}
+      </div>
       <div style="flex:1;min-width:0">
-        <div style="display:flex;justify-content:space-between;gap:6px">
+        <div style="display:flex;justify-content:space-between;gap:6px;align-items:center">
           <span style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(_ccResidentLabel(t.apt))} (${esc(String(t.apt))})</span>
           <span style="font-size:10.5px;color:var(--text-muted);flex-shrink:0">${esc(_ccFmtTime(t.lastAt))}</span>
         </div>
@@ -183,7 +217,8 @@ function renderCCThreadList() {
       </div>
       ${t.unread > 0 ? `<span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);width:9px;height:9px;border-radius:50%;background:var(--accent)"></span>` : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 async function selectCCThread(apt) {
@@ -243,17 +278,27 @@ function renderCCThreadView(apt, resident) {
   const st = _ccGetStatus(apt);
   const pillBase = 'border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:var(--text-dim)';
   const muteBtn = `<button onclick="toggleCCStatus('${apt}','muted')" style="${pillBase}${st.muted ? ';background:var(--bg-card);color:var(--text);border-color:var(--border-light)' : ''}">${st.muted ? 'Muted' : 'Mute'}</button>`;
-  const solvedBtn = `<button onclick="toggleCCStatus('${apt}','solved')" style="${pillBase}${st.solved ? ';background:var(--success-bg);color:var(--success);border-color:var(--success)' : ''}">${st.solved ? 'Solved' : 'Unsolved'}</button>`;
   const urgentBtn = `<button onclick="toggleCCStatus('${apt}','urgent')" style="${pillBase}${st.urgent ? ';background:var(--danger-bg);color:var(--danger);border-color:var(--danger)' : ''}">${st.urgent ? 'Urgent' : 'Normal'}</button>`;
+  // ⚠️ 2026-08-04 засав: Solved/Unsolved төлөв бүрмөсөн арилгав (CC center
+  // бол зөвхөн харилцах суваг, "шийдвэрлэсэн эсэх" тэмдэглэл үүрэгт нь
+  // таарахгүй гэж үзсэн). Urgent-ийг avatar-ийн улаан хүрээгээр, Muted-ийг
+  // avatar дотор жижиг mute icon-оор дүрсэлдэг болов.
+  const avatarBorder = st.urgent ? 'border:1px solid var(--danger)' : 'border:1px solid var(--border-light)';
+  const muteIcon = st.muted ? `<div title="Muted" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+  </div>` : '';
 
   view.innerHTML = `
     <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--bg-surface)">
-      <div style="width:34px;height:34px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0">${esc(_ccInitials(apt))}</div>
+      <div style="position:relative;flex-shrink:0">
+        <div style="width:34px;height:34px;border-radius:50%;background:var(--bg-card);${avatarBorder};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent)">${esc(_ccInitials(apt))}</div>
+        ${muteIcon}
+      </div>
       <div ${residentClick} style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:700">${esc(_ccResidentLabel(apt))}</div>
         <div style="font-size:11.5px;color:var(--text-muted)">${esc(String(apt))} тоот</div>
       </div>
-      <div style="display:flex;gap:6px;flex-shrink:0">${muteBtn}${solvedBtn}${urgentBtn}</div>
+      <div style="display:flex;gap:6px;flex-shrink:0">${muteBtn}${urgentBtn}</div>
     </div>
     <div id="cc-messages" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px">${bubbles || '<div class="empty-state" style="color:var(--text-muted)">Зурвас алга</div>'}</div>
     <div id="cc-typing-indicator" style="display:none;padding:2px 20px;font-size:11px;color:var(--text-muted);font-style:italic"></div>
