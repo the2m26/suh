@@ -184,7 +184,7 @@ export default function CallLog({ profile }) {
             return (
               <div key={i}>
                 {showDay && (
-                  <div style={{ textAlign: 'center', fontSize: 10.5, color: 'var(--text-secondary)', background: 'var(--bg-card-alt)', padding: '3px 12px', borderRadius: 20, margin: '6px auto', width: 'fit-content' }}>{day}</div>
+                  <div style={{ textAlign: 'center', fontSize: 10.5, color: 'var(--text-secondary)', padding: '3px 12px', margin: '6px auto', width: 'fit-content' }}>{day}</div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '78%', marginLeft: isOut ? 'auto' : 0 }}>
                   {/* ⚠️ 2026-08-04: бабл арилгасан — зүүн(ирсэн)/баруун(илгээсэн) эгнүүлэлт,
