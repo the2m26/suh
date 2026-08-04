@@ -11,7 +11,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="СӨХ" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- ⚠️ 2026-08-04 нэмэв: interactive-widget=overlays-content — клавиатур нээгдэхэд
+    iOS layout viewport-ийг агшаадаггүй, зөвхөн дээрээс нь давхарладаг (overlay) болгоно.
+    Үүнгүйгээр position:fixed элементүүд (навигэшн самбар г.м) клавиатур дээгүүр "хөвж" харагддаг байсан. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=overlays-content" />
     <title>СӨХ</title>
   </head>
   <body>
