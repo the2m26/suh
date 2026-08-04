@@ -215,12 +215,14 @@ export default function CallLog({ profile }) {
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder="Зурвас бичих..." rows={1}
             style={{
-              width: '100%', display: 'block', background: 'transparent', border: 'none', padding: 0,
+              width: '100%', display: 'block', background: 'transparent', border: 'none', outline: 'none', padding: 0,
               color: 'var(--text-primary)', fontSize: 16, lineHeight: 1.4, fontFamily: 'inherit',
               resize: 'none', boxSizing: 'border-box', overflowY: 'auto', maxHeight: 120,
               // ⚠️ fontSize 16px-ээс бага байвал iOS Safari дэлгэцийг АВТОМАТААР
               // zoom хийдэг — яг "CC messenger дэлгэц томроод бгаа" гэсэн алдааны
               // үндсэн шалтгаан нь энэ байсан (13px байсныг 16px болгож засав)
+              // ⚠️ 2026-08-04: WebKit-ийн стандарт :focus үеийн цэнхэр outline (border-той
+              // хамааралгүй тусад нь ажилладаг) арилгав — картны хүрээ хангалттай тул давхардал.
             }} />
         </div>
         {/* Viber маягийн 2D дугуй товч — хүрээ/сүүдэргүй, дэвсгэр цэнхэр (accent),
