@@ -329,7 +329,7 @@ function _ccAutoGrowReply() {
   const el = document.getElementById('cc-reply-text');
   if (!el) return;
   el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 50) + 'px';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
 async function sendCCReply(apt) {
