@@ -176,14 +176,15 @@ export default function CallLog({ profile }) {
                   <div style={{ textAlign: 'center', fontSize: 10.5, color: 'var(--text-secondary)', background: 'var(--bg-card-alt)', padding: '3px 12px', borderRadius: 20, margin: '6px auto', width: 'fit-content' }}>{day}</div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '78%', marginLeft: isOut ? 'auto' : 0 }}>
+                  {/* ⚠️ 2026-08-04: хэрэглэгчийн хүсэлтээр бабл (background/border/radius) арилгасан —
+                      зөвхөн текст + зүүн(ирсэн)/баруун(илгээсэн) эгнүүлэлт, өнгөөр ялгана */}
                   <div style={{
-                    padding: '10px 14px', borderRadius: 14, fontSize: 13, lineHeight: 1.5, textAlign: 'left',
-                    background: isOut ? 'var(--accent-dark, var(--accent))' : 'var(--bg-card-alt)',
-                    color: isOut ? '#fff' : 'var(--text-primary)',
-                    border: isOut ? 'none' : '1px solid var(--border-card)',
-                    borderTopRightRadius: isOut ? 4 : 14, borderTopLeftRadius: isOut ? 14 : 4,
+                    padding: '0 4px', fontSize: 13, lineHeight: 1.5,
+                    textAlign: isOut ? 'right' : 'left',
+                    color: isOut ? 'var(--accent)' : 'var(--text-primary)',
+                    whiteSpace: 'pre-wrap',
                   }}>{m.text}</div>
-                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 4, padding: '0 4px', textAlign: isOut ? 'right' : 'left' }}>
+                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2, padding: '0 4px', textAlign: isOut ? 'right' : 'left' }}>
                     {fmtTime(m.at)}{!isOut && m.sender ? ' · ' + m.sender : ''}
                   </div>
                 </div>
@@ -193,13 +194,15 @@ export default function CallLog({ profile }) {
         </div>
         {staffTyping && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontStyle: 'italic', padding: '2px 16px 8px' }}>СӨХ бичиж байна...</div>}
       </div>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'stretch', flexShrink: 0 }}>
+      {/* ⚠️ 2026-08-04: мсж бичих талбарыг мсж урсах талбарын карт (.mobile-list-item)-тай
+          адил дизайнтай болгосон — ижил background/border/border-radius/padding */}
+      <div className="mobile-list-item" style={{ display: 'flex', gap: 10, alignItems: 'stretch', flexShrink: 0, marginBottom: 0 }}>
         <textarea value={content}
           onChange={e => { setContent(e.target.value); notifyTyping(); }}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
           placeholder="Зурвас бичих..." rows={1}
-          style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 4, padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', resize: 'none', height: 44, boxSizing: 'border-box' }} />
-        <button className="login-btn" style={{ height: 44, width: 'auto', padding: '0 20px', marginTop: 0, flexShrink: 0, boxSizing: 'border-box' }} onClick={send} disabled={sending}>Илгээх</button>
+          style={{ flex: 1, background: 'transparent', border: 'none', padding: 0, color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box' }} />
+        <button className="login-btn" style={{ height: 36, width: 'auto', padding: '0 20px', marginTop: 0, flexShrink: 0, boxSizing: 'border-box', alignSelf: 'center' }} onClick={send} disabled={sending}>Илгээх</button>
       </div>
       {error && <div className="login-error">{error}</div>}
     </div>
