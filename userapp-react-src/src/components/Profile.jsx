@@ -171,8 +171,13 @@ export default function Profile({ profile, user, onProfileUpdate }) {
     const path = `${user.id}/background.jpg`;
     const { error } = await sb.storage.from('profile-backgrounds').upload(path, file, { upsert: true, contentType: file.type });
     if (error) { alert('Зураг байршуулахад алдаа гарлаа: ' + error.message); return; }
-    const { data } = sb.storage.from('profile-backgrounds').getPublicUrl(path);
-    await savePrefs({ bg_image_url: data.publicUrl + '?t=' + Date.now(), bg_color: null });
+    // ⚠️ 2026-08-04 засав: bucket PRIVATE болсон тул getPublicUrl() ажиллахгүй —
+    // createSignedUrl() ашиглана. Хугацаа 10 жил (315360000 сек) — практикт
+    // "бараг байнгын" URL, гэхдээ ХАМГИЙН ЭХЭНД зөвхөн эрх (RLS) баталгаажсаны
+    // дараа л олгогддог тул зурган URL-ыг мэдэхгүй хүн шууд таашүй.
+    const { data, error: signErr } = await sb.storage.from('profile-backgrounds').createSignedUrl(path, 315360000);
+    if (signErr) { alert('Зураг байршуулахад алдаа гарлаа: ' + signErr.message); return; }
+    await savePrefs({ bg_image_url: data.signedUrl, bg_color: null });
   }
   async function pickColor(hex) { await savePrefs({ bg_color: hex, bg_image_url: null }); }
   async function setBlur(v) { await savePrefs({ bg_blur: v }); }
