@@ -5,16 +5,22 @@ async function db_loadResidents() {
   if(!data){console.error("residents: data is null");return;}
   residents = data.map(r=>({
     id:r.id, dbId:r.id, building:r.building, floor:r.floor, door:r.door, entrance:r.entrance, apt:r.apt,
+    // ⚠️ 2026-08-05 нэмэв: apt=0 (Cosmo) гэдэг далд, түүхэн мэдлэг шаардсан
+    // тэмдэглэгээний оронд өөрийгөө тайлбарладаг (self-documenting) талбар —
+    // ирээдүйд өөр виртуал акаунт нэмэгдвэл шинэ "тусгай тоо" зохион
+    // бүтээх шаардлагагүй болно.
+    isVirtual: r.is_virtual||false,
     firstname:r.firstname||"", lastname:r.lastname||"", reg:r.reg||'', oeubd:r.oeubd||'', ownDate:r.own_date||'',
     phones:r.phones||[], emails:r.emails||[], phone:(r.phones||[])[0]||'',
     email:(r.emails||[])[0]||'',
-    // ⚠️ 2026-08-05 засав: Cosmo-ийн виртуал резидент мөр (apt=0)-д "Ам бүл"
-    // талбарын үндсэн үнэ (үл мэдэгдэх үед 1 гэж таамагладаг түүхий зан
-    // τөлөв) хамаарахгүй болгов — үүнгүйгээр хотхоны НИЙТ оршин суугчдын
+    // ⚠️ 2026-08-05 засав: Cosmo-ийн виртуал резидент мөр (isVirtual=true)-д
+    // "Ам бүл" талбарын үндсэн үнэ (үл мэдэгдэх үед 1 гэж таамагладаг түүхий
+    // зан төлөв) хамаарахгүй болгов — үүнгүйгээр хотхоны НИЙТ оршин суугчдын
     // тооллогод Cosmo "1 хүн" болж буруу орж байсан.
-    people: r.apt===0 ? 0 : (r.people||1), child1:r.child1||0, child2:r.child2||0, note:r.note||'',
+    people: r.is_virtual ? 0 : (r.people||1), child1:r.child1||0, child2:r.child2||0, note:r.note||'',
     parkings:r.parkings||[], storages:r.storages||[], vehicles:r.vehicles||[]
   }));
+
 }
 async function db_saveResident(r) {
   const row = {
@@ -144,6 +150,11 @@ function renderResidents(filter='', buildingFilter='', entranceFilter='') {
   const canEditRes = canWrite('residents'), canDelRes = canDelete('residents');
   let list = residents.filter(r=>{
     if(!r) return false;
+    // ⚠️ 2026-08-05 нэмэв: Cosmo (isVirtual=true) энэ жагсаалтад ил харагдвал
+    // (1) нийт оршин суугчийн ТОО тоологдох, (2) Засах/Устгах товч санамсаргүй
+    // дарагдах эрсдэлтэй тул — CC center-т хэвээрээ хэрэгтэй ч, энэ жагсаалтаас
+    // ЗААВАЛ нуана.
+    if(r.isVirtual) return false;
     if(buildingFilter && String(r.building)!==String(buildingFilter)) return false;
     if(entranceFilter && String(r.entrance||1)!==String(entranceFilter)) return false;
     if(!filter) return true;
@@ -391,7 +402,7 @@ function monthsUnpaidForResident(r) {
   // ⚠️ 2026-08-05 нэмэв: Cosmo-ийн виртуал резидент мөр (apt=0, ownDate/
   // τүүхгүй) үргэлж "999+ сар τүлөөгүй" гэж буруу гарч, "өр τөлβөρ →
   // Эрсдэлтэй" табд харагдаж байсныг засав.
-  if (r && r.apt === 0) return 0;
+  if (r && r.isVirtual) return 0;
   const relevantTx = transactions.filter(t=>t&&String(t.apt)===String(r.apt)&&t.type==='income'&&t.category==='resident').sort((a,b)=>(b.year*100+b.month)-(a.year*100+a.month));
   const lastPay = relevantTx[0];
   if(lastPay) return Math.max(0, (CUR_YEAR - lastPay.year)*12 + (CUR_MONTH - lastPay.month));
