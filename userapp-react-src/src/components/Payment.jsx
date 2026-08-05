@@ -50,14 +50,13 @@ export default function Payment({ profile }) {
 
   return (
     <div>
-      <div className="section-title">Төлбөрийн задаргаа (сар бүр)</div>
       <div className="mobile-list-item">
         {prevMonths.length > 0 && (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--danger, #f66)', padding: '4px 0' }}>⚠️ Өмнөх төлөгдөөгүй сарууд</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--danger, #f66)', padding: '4px 0' }}>Өмнөх төлөгдөөгүй сарууд</div>
             {prevMonths.map(m => (
               <div key={m} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{m}-р сарын хураамж</span>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{m}-р сарын төлбөр</span>
                 <span style={{ fontSize: 13, fontWeight: 700 }}>{breakdown.total.toLocaleString()}₮</span>
               </div>
             ))}
