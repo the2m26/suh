@@ -73,12 +73,17 @@ async function db_saveAsset(a) {
       a.dbId = data.id;
       // ⚠️ 2026-08-05 нэмэв: шинээр бүртгэгдсэн хөрөнгийн ID үүссэний ДАРАА
       // (insert хийгээгүй бол ID үл мэдэгдэх тул заавал 2 дахь алхам) — түүнд
-      // тулгуурласан, давхцахгүй Code128 barcode (жишээ нь "AST-000123")
-      // үүсгэж, түүнийг яг тэр мөрийн asset_barcode баганад буцаан бичнэ.
-      // ⚠️ 2026-08-05 засав: багана нэрийг "barcode"-ээс "asset_barcode" болгож
-      // сольсон — одоо байгаа "code" (гар аргаар бичдэг марк/сериал/баркод)
-      // талбартай давхардаж, андуурал үүсгэхгүйн тулд.
-      const assetBarcode = 'AST-' + String(data.id).padStart(6, '0');
+      // тулгуурласан, давхцахгүй Code128 barcode үүсгэж, яг тэр мөрийн
+      // asset_barcode баганад буцаан бичнэ.
+      // ⚠️ 2026-08-05 засав (2): "AST-{ID}" маягаас "{Улсын бүртгэлийн дугаар}-
+      // {ID}" болгож сольсон (AST угтвар арилгасан — нэмэлт тэмдэгт, дэмий
+      // зардал гэж үзсэн) — Улсын бүртгэлийн дугаар (СӨХ тохиргоо → reg_number)
+      // улсын хэмжээнд ХЭЗЭЭ Ч давтагдахгүй тул, ирээдүйд олон СӨХ-ийг нэг дор
+      // нэгтгэсэн ч (multi-tenant) barcode ХЭЗЭЭ Ч давхцахгүй байх баталгааг
+      // ОДООХООС тавьж өгнө.
+      const orgProfile = await _ensureSokhOrgProfile();
+      const regNumber = orgProfile?.reg_number || 'UNKNOWN';
+      const assetBarcode = `${regNumber}-` + String(data.id).padStart(6, '0');
       const { error: bcErr } = await sb.from('fixed_assets').update({ asset_barcode: assetBarcode }).eq('id', data.id);
       if (bcErr) console.error('asset_barcode бичихэд алдаа:', bcErr.message);
       else a.assetBarcode = assetBarcode;
