@@ -309,12 +309,12 @@ function openBizPayModal(b) {
   const prevMonths = missingMonths.slice(0, -1);
   const total = monthlyTotal * missingMonths.length;
   bd.innerHTML = `
-    ${prevMonths.length ? `<div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:8px">⚠️ Өмнөх төлөгдөөгүй сарууд</div>
-    ${prevMonths.map(m=>`<div class="summary-row"><span class="summary-key">${m}-р сарын хураамж</span><span class="summary-val font-mono">${fmtMoney(monthlyTotal)}</span></div>`).join('')}
+    ${prevMonths.length ? `<div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:8px">Өмнөх төлөгдөөгүй сарууд</div>
+    ${prevMonths.map(m=>`<div class="summary-row"><span class="summary-key">${m}-р сарын төлбөр</span><span class="summary-val font-mono">${fmtMoney(monthlyTotal)}</span></div>`).join('')}
     <div style="height:1px;background:var(--border);margin:8px 0"></div>` : ''}
-    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">📋 ${esc(b.name)} — ${CUR_MONTH}-р сарын задаргаа</div>
+    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">${esc(b.name)} — ${CUR_MONTH}-р сарын задаргаа</div>
     ${feeRows.filter(x=>x.amt).map(x=>`<div class="summary-row"><span class="summary-key">${esc(x.name)}</span><span class="summary-val font-mono">${fmtMoney(x.amt)}</span></div>`).join('')}
-    <div class="summary-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px">
+    <div class="summary-row" style="margin-top:4px">
       <span class="summary-key" style="font-weight:700;color:var(--text)">Нийт төлөх дүн (${missingMonths.length} сар)</span>
       <span class="summary-val text-accent" style="font-size:16px">${fmtMoney(total)}</span></div>`;
   document.getElementById('biz-pay-amount').value = total;

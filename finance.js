@@ -956,12 +956,12 @@ function _renderPayBreakdown(entity, entityType, label) {
   const prevMonths = missingMonths.slice(0, -1); // одоогийн сараас бусад, эрт нь дараалсан
   const total = monthlyTotal * missingMonths.length;
   bd.innerHTML = `
-    ${prevMonths.length ? `<div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:8px">⚠️ Өмнөх төлөгдөөгүй сарууд</div>
-    ${prevMonths.map(m=>`<div class="summary-row"><span class="summary-key">${m}-р сарын хураамж</span><span class="summary-val font-mono">${fmt(monthlyTotal)}</span></div>`).join('')}
+    ${prevMonths.length ? `<div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:8px">Өмнөх төлөгдөөгүй сарууд</div>
+    ${prevMonths.map(m=>`<div class="summary-row"><span class="summary-key">${m}-р сарын төлбөр</span><span class="summary-val font-mono">${fmt(monthlyTotal)}</span></div>`).join('')}
     <div style="height:1px;background:var(--border);margin:8px 0"></div>` : ''}
-    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">📋 ${esc(label)} — ${CUR_MONTH}-р сарын задаргаа</div>
+    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">${esc(label)} — ${CUR_MONTH}-р сарын задаргаа</div>
     ${feeRows.filter(x=>x.amt).map(x=>`<div class="summary-row"><span class="summary-key">${esc(x.name)}</span><span class="summary-val font-mono">${fmt(x.amt)}</span></div>`).join('')}
-    <div class="summary-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px">
+    <div class="summary-row" style="margin-top:4px">
       <span class="summary-key" style="font-weight:700;color:var(--text)">Нийт төлөх дүн (${missingMonths.length} сар)</span>
       <span class="summary-val text-accent" style="font-size:16px">${fmt(total)}</span></div>`;
   document.getElementById('pay-amount').value = total;
@@ -1008,7 +1008,7 @@ function selectPayMethod(el,method){
 // ЭРТНИЙ (хамгийн эхний) төлөгдөөгүй сараас эхлэн, дараалан "хөөж" төлдөг
 // зарчмаар, оруулсан НИЙТ дүнг тохирох тооны сард хуваарилж, сар БүРД ТУСДАА
 // transaction мөр + НББ journal entry (ном журмаар зөв, cash-basis боловч
-// АЛЬ сарын хураамж болохыг тодорхой хадгална) үүсгэнэ.
+// АЛЬ сарын төлбөр болохыг тодорхой хадгална) үүсгэнэ.
 function _allocatePaymentToMonths(entity, entityType, amount) {
   const feeRows = feeCatalog.filter(f => f.active && f.applies_to===entityType)
     .map(f => Math.round(_feeQuantity(entity, entityType, f.unit_type) * (+f.rate||0)));
