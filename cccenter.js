@@ -414,7 +414,7 @@ function renderCCThreadView(apt, resident) {
           oninput="notifyCCTyping('${apt}');_ccAutoGrowReply()"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCCReply('${apt}');}"
           style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:6px 30px 6px 14px;color:var(--text);font-size:13px;line-height:20px;font-family:inherit;resize:none;height:34px;max-height:120px;box-sizing:border-box;overflow-y:auto">${_ccEditingId ? esc((_ccActiveMessages.find(m => m.id === _ccEditingId) || {}).text || '') : ''}</textarea>
-        <button onclick="_ccPickFile('${apt}')" id="cc-attach-btn" style="position:absolute;right:8px;bottom:8px;background:transparent;border:none;padding:0;cursor:pointer;color:var(--text-muted);display:flex">
+        <button onclick="_ccPickFile('${apt}')" id="cc-attach-btn" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:none;padding:0;cursor:pointer;color:var(--text-muted);display:flex">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.8"/><path d="M21 15l-5.2-5.2a2 2 0 0 0-2.8 0L5 18"/></svg>
         </button>
       </div>
@@ -599,4 +599,3 @@ async function _ccHandleFileSelected(event) {
     if (statusEl) statusEl.style.display = 'none';
   }
 }
-
