@@ -8,6 +8,8 @@ import { sb } from '../lib/supabase';
 // (.content-page-header)-ийн доод хүрээ, tab-bar (.tab-bar-wrap)-ийн дээд
 // хүрээг БОДИТООР хэмжиж (ResizeObserver/getBoundingClientRect), position:fixed-ээр
 // тэдгээрийн ХООРОНД яг таарч байрлуулна — ХАТУУ тоо ТААМАГЛАХГүй.
+// ⚠️ 2026-08-05 нэмэв: Зурган attachment (compress 800×600 JPG, private
+// Supabase bucket "cc-attachments", 1 сарын дараа сервер талд автомат устгагдана).
 
 function fmtTime(iso) {
   const d = new Date(iso);
@@ -16,6 +18,43 @@ function fmtTime(iso) {
 function fmtDay(iso) {
   const d = new Date(iso);
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// ⚠️ 2026-08-05 нэмэв: сонгосон зургийг 800×600-аас ХЭТРүүЛЭХГүйгээр (харьцаагаа
+// хадгалж) JPEG болгож шахна — Storage зай хэмнэх (1 сарын автомат устгалттай
+// хамт ажиллана). Хэмжээ Хязгаарлалт (байтаар) ЗОРИУДААР тавиагүй, зөвхөн
+// хэмжээгээр (800×600) хязгаарлана гэдгээр хэрэглэгч тодорхойлсон.
+async function compressImage(file, maxW = 800, maxH = 600, quality = 0.8) {
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+  const img = await new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = reject;
+    im.src = dataUrl;
+  });
+  const ratio = Math.min(maxW / img.width, maxH / img.height, 1);
+  const width = Math.round(img.width * ratio);
+  const height = Math.round(img.height * ratio);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+}
+
+// ⚠️ private bucket тул зурган URL үргэлж createSignedUrl()-ээр л үүсдэг
+// (getPublicUrl() ажиллахгүй) — 10 жилийн хугацаатай (бараг байнгын, гэхдээ
+// эрх шалгагдсаны дараа л олгогддог тул URL мэдэхгүй хүн шууд таашгүй).
+async function resolveAttachmentUrl(path) {
+  if (!path) return null;
+  const { data, error } = await sb.storage.from('cc-attachments').createSignedUrl(path, 315360000);
+  if (error) return null;
+  return data.signedUrl;
 }
 
 // ⚠️ 2026-08-02 засав: channel-ийг ганц удаа .on()+.subscribe() хийж, тухайн
@@ -66,12 +105,16 @@ export default function CallLog({ profile }) {
   const [messages, setMessages] = useState([]);
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [error, setError] = useState('');
   const [staffTyping, setStaffTyping] = useState(false);
   const typingGateRef = useRef(0);
   const typingHideRef = useRef(null);
   const msgBoxRef = useRef(null);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const bounds = useFixedBounds();
 
   // ⚠️ 2026-08-04: textarea-г бичсэн текстийн дагуу динамикаар дээшээ сунадаг болгов
@@ -92,11 +135,17 @@ export default function CallLog({ profile }) {
             .eq('recipient_filter', 'specific').eq('recipient_specific_id', rId).order('sent_at', { ascending: true })
         : Promise.resolve({ data: [] }),
     ]);
-    const merged = [
-      ...(incoming || []).map(m => ({ dir: 'out', text: m.content, at: m.created_at })),
-      ...(outgoing || []).map(m => ({ dir: 'in', text: m.content, at: m.sent_at, sender: m.sender_name })),
+    const rows = [
+      ...(incoming || []).map(m => ({ dir: 'out', text: m.content, at: m.created_at, attachmentPath: m.attachment_path })),
+      ...(outgoing || []).map(m => ({ dir: 'in', text: m.content, at: m.sent_at, sender: m.sender_name, attachmentPath: m.attachment_path })),
     ].sort((a, b) => new Date(a.at) - new Date(b.at));
-    setMessages(merged);
+    // ⚠️ attachment-той мсж бүрт signed URL зэрэгцүүлж (Promise.all) тайлна —
+    // приваат bucket тул URL-ыг урьдчилан хадгалах боломжгүй, үргэлж татаж авна.
+    const withUrls = await Promise.all(rows.map(async r => ({
+      ...r,
+      attachmentUrl: r.attachmentPath ? await resolveAttachmentUrl(r.attachmentPath) : null,
+    })));
+    setMessages(withUrls);
   }
 
   useEffect(() => {
@@ -112,14 +161,15 @@ export default function CallLog({ profile }) {
       // ⚠️ 2026-08-02 засав: cleanup функц ӨМНӨ нь async IIFE-ийн ДОТОР
       // "return" хийгдэж байсан тул React үүнийг хэзээ ч бүртгэдэггүй байсан
       // (useEffect зөвхөн ГАДНА талын функцээс шууд буцаасан утгыг л cleanup
-      // гэж үздэг). Үүнээс болж channel хэзээ ч цэвэрлэгдэхгүй, effect дахин
+      // гэж үздэг). үүнээс болж channel хэзээ ч цэвэрлэгдэхгүй, effect дахин
       // ажиллах бүрд ижил нэртэй ("my-cc-thread-live") шинэ channel үүсгэхийг
       // оролдоод "cannot add callbacks after subscribe()" алдаа өгдөг байсан.
       ch = sb.channel('my-cc-thread-live')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, async (payload) => {
           const row = payload.new;
           if (row.source !== 'cc-center' || row.recipient_specific_id !== rId) return;
-          setMessages(prev => [...prev, { dir: 'in', text: row.content, at: row.sent_at, sender: row.sender_name }]);
+          const attachmentUrl = row.attachment_path ? await resolveAttachmentUrl(row.attachment_path) : null;
+          setMessages(prev => [...prev, { dir: 'in', text: row.content, at: row.sent_at, sender: row.sender_name, attachmentPath: row.attachment_path, attachmentUrl }]);
         })
         .subscribe();
     })();
@@ -156,7 +206,7 @@ export default function CallLog({ profile }) {
 
   async function send() {
     const text = content.trim();
-    if (!text) { setError('Бичнэ vv'); return; }
+    if (!text) { setError('Бичнэ үү'); return; }
     setError('');
     setSending(true);
     const { error: insErr } = await sb.from('feedback_requests').insert({ apt: profile.apt, sender_name: profile.full_name, content: text });
@@ -166,10 +216,34 @@ export default function CallLog({ profile }) {
     setMessages(prev => [...prev, { dir: 'out', text, at: new Date().toISOString() }]);
   }
 
+  // ⚠️ 2026-08-05 нэмэв: Viber маягийн — зураг сонгомогц шууд compress+upload+
+  // илгээгдэнэ (нэмэлт "баталгаажуулах" алхамгүй, хамгийн энгийн урсгал).
+  async function handleFileSelected(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // ижил файлыг дахин сонгож болохоор reset хийнэ
+    if (!file) return;
+    setError('');
+    setUploading(true);
+    try {
+      const blob = await compressImage(file);
+      const path = `${profile.apt}/${Date.now()}.jpg`;
+      const { error: upErr } = await sb.storage.from('cc-attachments').upload(path, blob, { contentType: 'image/jpeg' });
+      if (upErr) throw upErr;
+      const { error: insErr } = await sb.from('feedback_requests').insert({ apt: profile.apt, sender_name: profile.full_name, content: '', attachment_path: path });
+      if (insErr) throw insErr;
+      const attachmentUrl = await resolveAttachmentUrl(path);
+      setMessages(prev => [...prev, { dir: 'out', text: '', at: new Date().toISOString(), attachmentPath: path, attachmentUrl }]);
+    } catch (err) {
+      setError('Зураг илгээхэд алдаа гарлаа');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   let lastDay = '';
   const style = bounds
     ? { position: 'fixed', top: bounds.top, bottom: bounds.bottom, left: bounds.left, right: bounds.right, zIndex: 5 }
-    : { position: 'relative', height: '60vh' }; // хэмжигдэхээс өмнөх түр байдал
+    : { position: 'relative', height: '60vh' }; // хэмжигдэхээс өмнөх τүр байдал
 
   return (
     <div style={{ ...style, display: 'flex', flexDirection: 'column', padding: '4px 14px' }}>
@@ -189,12 +263,17 @@ export default function CallLog({ profile }) {
                 <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '78%', marginLeft: isOut ? 'auto' : 0 }}>
                   {/* ⚠️ 2026-08-04: бабл арилгасан — зүүн(ирсэн)/баруун(илгээсэн) эгнүүлэлт,
                       хоёулаа программын default цагаан текст өнгөтэй (цэнхэр биш) */}
-                  <div style={{
-                    padding: '0 4px', fontSize: 13, lineHeight: 1.5,
-                    textAlign: isOut ? 'right' : 'left',
-                    color: 'var(--text-primary)',
-                    whiteSpace: 'pre-wrap',
-                  }}>{m.text}</div>
+                  {m.attachmentUrl && (
+                    <img src={m.attachmentUrl} alt="Хавсаргасан зураг" style={{ maxWidth: '100%', borderRadius: 10, display: 'block', marginBottom: m.text ? 4 : 0 }} />
+                  )}
+                  {m.text && (
+                    <div style={{
+                      padding: '0 4px', fontSize: 13, lineHeight: 1.5,
+                      textAlign: isOut ? 'right' : 'left',
+                      color: 'var(--text-primary)',
+                      whiteSpace: 'pre-wrap',
+                    }}>{m.text}</div>
+                  )}
                   <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2, padding: '0 4px', textAlign: isOut ? 'right' : 'left' }}>
                     {fmtTime(m.at)}{!isOut && m.sender ? ' · ' + m.sender : ''}
                   </div>
@@ -203,19 +282,20 @@ export default function CallLog({ profile }) {
             );
           })}
         </div>
-        {staffTyping && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontStyle: 'italic', padding: '2px 16px 8px' }}>СӨХ бичиж байна...</div>}
+        {staffTyping && <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontStyle: 'italic', padding: '2px 16px 8px' }}>СөХ бичиж байна...</div>}
       </div>
       {/* ⚠️ 2026-08-04: зөвхөн зурвас БИЧИХ талбар (textarea) нь мсж урсах карттай
           адил дизайнтай (.mobile-list-item). "Илгээх" товч тусдаа элемент —
           картны дотор БИШ, картны гадна зэрэгцүүлсэн байрлалтай. */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexShrink: 0 }}>
-        <div className="mobile-list-item" style={{ flex: 1, padding: '10px 14px', marginBottom: 0 }}>
+        <div className="mobile-list-item" style={{ flex: 1, padding: '10px 14px', marginBottom: 0, position: 'relative' }}>
           <textarea ref={textareaRef} value={content}
             onChange={e => { setContent(e.target.value); notifyTyping(); }}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder="Зурвас бичих..." rows={1}
             style={{
               width: '100%', display: 'block', background: 'transparent', border: 'none', outline: 'none', padding: 0,
+              paddingRight: 30,
               color: 'var(--text-primary)', fontSize: 16, lineHeight: 1.4, fontFamily: 'inherit',
               resize: 'none', boxSizing: 'border-box', overflowY: 'auto', maxHeight: 120,
               // ⚠️ fontSize 16px-ээс бага байвал iOS Safari дэлгэцийг АВТОМАТААР
@@ -224,6 +304,20 @@ export default function CallLog({ profile }) {
               // ⚠️ 2026-08-04: WebKit-ийн стандарт :focus үеийн цэнхэр outline (border-той
               // хамааралгүй тусад нь ажилладаг) арилгав — картны хүрээ хангалттай тул давхардал.
             }} />
+          {/* ⚠️ 2026-08-05 нэмэв: Viber маягийн зурган attachment товч — талбарын
+              ДОТОР баруун талд, тунгалаг фонтой, текст бичиж эхлэнгүүт (content
+              хоосон бус болмогц) алга болно. */}
+          {!content && (
+            <button onClick={() => setAttachMenuOpen(true)} disabled={uploading} aria-label="Зураг хавсаргах"
+              style={{
+                position: 'absolute', right: 10, bottom: 10, background: 'transparent', border: 'none', padding: 0,
+                cursor: uploading ? 'default' : 'pointer', color: 'var(--text-secondary)', display: 'flex', opacity: uploading ? 0.5 : 1,
+              }}>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="9" cy="9" r="1.8" /><path d="M21 15l-5.2-5.2a2 2 0 0 0-2.8 0L5 18" />
+              </svg>
+            </button>
+          )}
         </div>
         {/* Viber маягийн 2D дугуй товч — хүрээ/сүүдэргүй, дэвсгэр цэнхэр (accent),
             дотор SVG сум цагаан өнгөтэй */}
@@ -237,7 +331,26 @@ export default function CallLog({ profile }) {
           </svg>
         </button>
       </div>
+      {uploading && <div style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '4px 4px 0' }}>Зураг илгээж байна...</div>}
       {error && <div className="login-error">{error}</div>}
+
+      {/* ⚠️ 2026-08-05 нэмэв: userapp Profile-ийн background зураг сонгох popup-той
+          ижил дизайн (.modal-overlay/.qpay-modal, аль хэдийн байгаа CSS ашиглав) —
+          зөвхөн 2 сонголт (Photo Library, Take Photo), "Choose File" ЗОРИУДААР үгүй. */}
+      {attachMenuOpen && (
+        <div className="modal-overlay open" onClick={e => e.target === e.currentTarget && setAttachMenuOpen(false)}>
+          <div className="qpay-modal" style={{ textAlign: 'left', padding: '8px 20px' }}>
+            <div className="add-tile-row" onClick={() => { setAttachMenuOpen(false); fileInputRef.current?.click(); }}>
+              <span>Photo Library</span>
+            </div>
+            <div className="add-tile-row" onClick={() => { setAttachMenuOpen(false); cameraInputRef.current?.click(); }}>
+              <span>Take Photo</span>
+            </div>
+          </div>
+        </div>
+      )}
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileSelected} />
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFileSelected} />
     </div>
   );
 }
