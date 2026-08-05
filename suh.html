@@ -596,10 +596,13 @@
       <span>Хэрэглэгч удирдлага</span>
     </div>
     <div class="nav-item" id="nav-app-settings" onclick="showPage('app-settings')">
-      <span>Апп тохиргоо</span>
+      <span>UserApp тохиргоо</span>
     </div>
     <div class="nav-item" id="nav-ai-integration-plan" onclick="showPage('ai-integration-plan')">
       <span>AI Integration Plan</span>
+    </div>
+    <div class="nav-item" id="nav-cosmo-settings" onclick="showPage('cosmo-settings')">
+      <span>Cosmo тохиргоо</span>
     </div>
     <div class="nav-item" id="nav-activity-log" onclick="showPage('activity-log')">
       <span>Протокол</span>
@@ -1577,6 +1580,22 @@
       </div>
     </div>
 
+    <!-- ⚠️ 2026-08-05 нэмэв: CC center-ийн зурган attachment сонголт (userapp
+         Profile-ийн background зураг сонгох popup-той адил зарчим — зөвхөн
+         2 сонголт, "Choose File" ЗОРИУДААР үгүй). -->
+    <div class="modal-overlay" id="modal-cc-attach">
+      <div class="modal" style="max-width:320px">
+        <div class="modal-header">
+          <div class="modal-title">Зураг сонгох</div>
+          <button class="modal-close" onclick="closeModal('modal-cc-attach')">×</button>
+        </div>
+        <div class="modal-body" style="padding:8px 20px 16px">
+          <div onclick="_ccPickFromLibrary()" style="padding:12px 4px;border-bottom:1px solid var(--border-card);cursor:pointer;font-size:13.5px">Photo Library</div>
+          <div onclick="_ccPickFromCamera()" style="padding:12px 4px;cursor:pointer;font-size:13.5px">Take Photo</div>
+        </div>
+      </div>
+    </div>
+
     <!-- CC CENTER (2026-07-30 — chat/messenger маягийн загвараас ЖИНХЭНЭ болсон.
          Хуучин "CC center" одоо "Зар, мэдэгдэл илгээх" нэртэй, "Ирсэн" таб нь
          энэ хуудсаар орлогдож устгагдсан) -->
@@ -1588,7 +1607,7 @@
       <div style="display:flex;height:calc(100vh - 96px);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
         <!-- Зүүн: харилцагчийн жагсаалт -->
         <div style="width:300px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-surface);display:flex;flex-direction:column">
-          <div style="padding:12px;border-bottom:1px solid var(--border);display:flex;gap:8px">
+          <div style="padding:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;height:65px;box-sizing:border-box">
             <select id="cc-status-filter" onchange="renderCCThreadList()" style="width:auto;flex-shrink:0">
               <option value="all">All</option>
               <option value="muted">Muted</option>
@@ -1797,6 +1816,78 @@
       </div>
     </div>
 
+    <!-- COSMO ТОХИРГОО (2026-08-04 нэмэв) -->
+    <div class="page" id="page-cosmo-settings">
+      <div class="card mb-16" style="padding:20px;max-width:720px">
+        <div class="section-title" style="margin-bottom:14px">Cosmo (AI туслах) тохиргоо</div>
+
+        <label style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;margin-bottom:18px">
+          <input type="checkbox" id="cosmo-enabled" style="width:18px;height:18px">
+          Cosmo идэвхтэй (On/Off)
+        </label>
+
+        <div class="section-title" style="font-size:13px;margin-bottom:8px">Ажлын цагийн хүрээ (резидентэд автомат хариулах горимд хамаарна)</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+          <input type="time" id="cosmo-work-start" style="width:auto">
+          <span style="color:var(--text-muted)">—</span>
+          <input type="time" id="cosmo-work-end" style="width:auto">
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px" id="cosmo-work-days">
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="1" class="cosmo-day">Дав</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="2" class="cosmo-day">Мяг</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="3" class="cosmo-day">Лха</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="4" class="cosmo-day">Пүр</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="5" class="cosmo-day">Баа</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="6" class="cosmo-day">Бям</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="7" class="cosmo-day">Ням</label>
+        </div>
+
+        <div class="section-title" style="font-size:13px;margin-bottom:8px">Өгөгдлийн эрх (аль модулиас мэдээлэл унших)</div>
+        <div style="margin-bottom:20px">
+          <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px">
+            <input type="checkbox" id="cosmo-scope-report" checked disabled style="margin-top:2px;flex-shrink:0;width:16px;height:16px">
+            <label for="cosmo-scope-report" style="display:inline;font-size:13px;font-weight:400;color:var(--text-dim);margin:0;text-align:left">Тайлан (заавал зөвхөн өөрийнх нь apt — тохиргоогоор тойрч гарах боломжгүй)</label>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px">
+            <input type="checkbox" id="cosmo-scope-news" style="margin-top:2px;flex-shrink:0;width:16px;height:16px">
+            <label for="cosmo-scope-news" style="display:inline;font-size:13px;font-weight:400;color:var(--text-dim);margin:0;text-align:left">Нийтэлсэн мэдээ, мэдээлэл</label>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px">
+            <input type="checkbox" id="cosmo-scope-polls" style="margin-top:2px;flex-shrink:0;width:16px;height:16px">
+            <label for="cosmo-scope-polls" style="display:inline;font-size:13px;font-weight:400;color:var(--text-dim);margin:0;text-align:left">Санал асуулга/сонгуулийн дүн (аггрегат)</label>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px">
+            <input type="checkbox" id="cosmo-scope-market" style="margin-top:2px;flex-shrink:0;width:16px;height:16px">
+            <label for="cosmo-scope-market" style="display:inline;font-size:13px;font-weight:400;color:var(--text-dim);margin:0;text-align:left">Зах зээлийн үнэлгээний хандлага (12 сар, forecast-гүй)</label>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <input type="checkbox" id="cosmo-scope-financial" style="margin-top:2px;flex-shrink:0;width:16px;height:16px">
+            <label for="cosmo-scope-financial" style="display:inline;font-size:13px;font-weight:400;color:var(--text-dim);margin:0;text-align:left">СөХ санхүүгийн ерөнхий дүр зураг (аггрегат)</label>
+          </div>
+        </div>
+
+        <div class="section-title" style="font-size:13px;margin-bottom:8px">Хариултын гүнзгийрүүлэлт</div>
+        <select id="cosmo-response-depth" style="width:auto;margin-bottom:20px">
+          <option value="short">Товч (2-3 өгүүлбэр)</option>
+          <option value="detailed">Дэлгэрэнгүй</option>
+        </select>
+
+        <!-- ⚠️ 2026-08-05 нэмэв: НЭМЭЛТ (косметик) заавар — өнгө аяс/тайлбарын
+             төвшинд л, ХАТУУ ДҮРЭМ (нууцлал/аюулгүй байдал) кодод далд үлдэж
+             өөрчлөгддөггүй. Үүнийг cosmo.js-ийн prompt функцүүд ХАТУУ ДҮРЭМ-ийн
+             ДАРАА л нэмж холбоно (overrides биш, зөвхөн supplement). -->
+        <div class="section-title" style="font-size:13px;margin-bottom:6px">Нэмэлт заавар (өнгө аяс, тайлбар — заавал биш)</div>
+        <div style="color:var(--text-muted);font-size:11.5px;margin-bottom:8px">Жишээ: "Товч, богино хариул. СӨХ-ны хүрээнээс халихгүйгээр сэдвийг багцал. Ажил хэрэгч өнгөөр харьц, хэт эелдэг нялуун бус." Нууцлал/аюулгүй байдлын дүрмийг энд өөрчлөх боломжгүй — тэдгээр кодод хатуу тогтоогдсон.</div>
+        <textarea id="cosmo-extra-prompt" placeholder="Жишээ: Товч, ажил хэрэгч өнгөөр харьц..." style="width:100%;min-height:70px;margin-bottom:20px;padding:10px 14px;font-family:inherit;font-size:13px;resize:vertical"></textarea>
+
+        <button class="btn btn-primary" onclick="saveCosmoSettings()">Хадгалах</button>
+        <span id="cosmo-save-status" style="margin-left:10px;font-size:12.5px;color:var(--success)"></span>
+
+        <div class="section-title" style="font-size:13px;margin-top:28px;margin-bottom:8px">Сүүлийн үйл ажиллагааны лог (аудит)</div>
+        <div id="cosmo-log-list" style="font-size:12.5px;color:var(--text-dim)"></div>
+      </div>
+    </div>
+
     <!-- AI INTEGRATION PLAN (2026-08-02 нэмэв) — санаа/дизайны төлөвлөгөө,
          функциональ бус лавлах хуудас. 2 таб: AI+CC messenger, AI+Camera. -->
     <div class="page" id="page-ai-integration-plan">
@@ -1804,53 +1895,75 @@
         <div class="tab active" onclick="switchAiPlanTab('cc',this)">AI + CC messenger</div>
         <div class="tab" onclick="switchAiPlanTab('camera',this)">AI + Camera</div>
         <div class="tab" onclick="switchAiPlanTab('domain',this)">Домайн / Олон хотхон</div>
+        <div class="tab" onclick="switchAiPlanTab('servermigration',this)">Server migration</div>
+        <div class="tab" onclick="switchAiPlanTab('extraideas',this)">Extra dev ideas</div>
       </div>
 
       <!-- ТАБ 1: AI + CC MESSENGER -->
       <div id="ai-plan-tab-cc">
         <div class="card mb-16" style="padding:20px">
-          <div class="section-title" style="margin-bottom:4px">💡 Төлөвлөгөө — амьдралд хараахан хэрэгжээгүй</div>
-          <div style="color:var(--text-muted);font-size:12.5px;margin-bottom:16px">Санаа, дизайны тэмдэглэл (2026-08-02). Ирээдүйд тусдаа шинэ chat session-д хэрэгжүүлэх төлөвлөгөө.</div>
+          <div class="section-title" style="margin-bottom:4px">🚧 Идэвхтэй хөгжүүлж байгаа ("Cosmo" AI туслах)</div>
+          <div style="color:var(--text-muted);font-size:12.5px;margin-bottom:16px">2026-08-02: анхны төлөвлөгөө. 2026-08-04-с эхлэн бодитоор хэрэгжүүлж эхэлсэн. Одоогийн статус доор.</div>
 
           <h4 style="margin:16px 0 6px">Зорилго</h4>
-          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Ажлын бус цагт ЭСВЭЛ ажилтан X минутын дотор хариулаагүй үед, CC messenger дэх резидентийн асуултад автоматаар AI хариулдаг болгох. Яаралтай/аюулгүй байдлын асуудалд ХЭЗЭЭ Ч оролцохгүй — "Онцгой хэрэгцээт утас" tile хэвээрээ гол зам байна.</p>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Ажлын бус цагт CC messenger дэх резидентийн асуултад автоматаар AI хариулдаг болгох. Яаралтай/аюулгүй байдлын асуудалд ХЭЗЭЭ Ч оролцохгүй — "Онцгой хэрэгцээт утас" tile хэвээрээ гол зам байна.</p>
 
-          <h4 style="margin:16px 0 6px">Архитектур</h4>
-          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Supabase Edge Function (gate-webhook/send-push-тэй адил зарчим) — Supabase-ийн cloud серверт байнга ажиллана, ГЭДЭГ УЧИР бүх компьютер (админ, ажилтан, резидент) унтраатай байсан ч ажиллана. Гадны LLM (Anthropic/OpenAI г.м) API холбогдох шаардлагатай, key нь Supabase Secrets-д хадгалагдана.</p>
-
-          <h4 style="margin:16px 0 6px">LLM сонголт — Gemini үнэгүй хувилбарын тухай (2026-08-03 нэмэв)</h4>
-          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Танай зорилго ("зөвхөн бэлдсэн мэдээллийн сангаас олж хариулах, ТААМАГЛАХГүй") бол энгийн даалгавар — хамгийн хүчирхэг (мөн үнэтэй) загвар шаардахгүй. <strong>Google Gemini</strong>-ийн хөнгөн хувилбар (жиш нь "Flash") бол Claude/GPT-ээс ялгаатайгаар <strong>тогтмол үнэгүй хувилбартай</strong> (Google AI Studio-гоор, тодорхой хязгаарлалттай) тул энэ ажилд зохимжтой сонголт.</p>
-          <div style="color:var(--warning);font-weight:700;font-size:13px;margin-top:10px">⚠️ Хэрэгжүүлэхээсээ өмнө шалгах 2 зүйл</div>
+          <h4 style="margin:16px 0 6px">Хэрэгжсэн (2026-08-04)</h4>
+          <ul style="color:var(--success);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
+            <li>✅ DB бүтэц: residents-д виртуал "Cosmo" мөр (apt=0), notifications/feedback_requests.is_ai_generated, cosmo_log (rate-limit+аудит), settings.cosmo (тохиргоо JSON)</li>
+            <li>✅ `cosmo.js` Edge Function — 2 горим (резидент/analyst) НЭГ функц дотор</li>
+            <li>✅ Database Webhook (pg_net) холболт — тестлэгдсэн, ажиллаж байгаа нь баталгаажсан</li>
+            <li>✅ "Cosmo тохиргоо" админ хуудас (On/Off, ажлын цаг, өгөгдлийн эрх, хариултын гүнзгийрүүлэлт, аудит лог)</li>
+          </ul>
+          <div style="color:var(--danger);font-weight:700;font-size:13px;margin-top:14px">⚠️ үлдсэн (дараагийн chat session-д хийх)</div>
           <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
-            <li><strong>Хэрэглээний хязгаар (rate limit)</strong> — үнэгүй хувилбар ихэвчлэн "минутанд/өдөрт хэдэн хүсэлт" гэсэн хязгаартай. Танай үйлчлүүлэгчдийн тоо цөөхөн (нэг СӨХ) тул магадгүй хүрэлцэх байх, гэхдээ хэрэгжүүлэх үед бодит тоог шалгах хэрэгтэй</li>
-            <li><strong>Хувийн мэдээллийн нөхцөл</strong> — резидентийн нэхэмжлэхийн задаргаа (санхүүгийн мэдээлэлтэй ойрхон) үнэгүй үйлчилгээгээр дамжих тул, Google-ийн үнэгүй хувилбарын өгөгдөл ашиглах нөхцөл (жиш нь загвар сургахад ашиглах эсэх) төлбөртэй хувилбараас ӨӨР байж болзошгүй — үүнийг хэрэгжүүлэхээсээ өмнө тодорхой шалгах ёстой</li>
+            <li>`buildResidentContext()` функц дотор бодит DB query (тариф/төлбөр/өр авлага г.м) хараахан бичигдээгүй — одоогоор placeholder</li>
+            <li>Ажиллах AI provider эцэслэн тодорхойгүй (доор дэлгэрэнгүй)</li>
           </ul>
 
+          <h4 style="margin:16px 0 6px">AI provider хайлт — үнэгүй API key олох оролдлого (2026-08-04)</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Хэд хэдэн үйлчилгээг туршиж, дараах бэрхшээлүүд тулгарсан:</p>
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px">
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px;font-weight:700">үйлчилгээ</td><td style="padding:8px 6px;font-weight:700">Асуудал</td></tr>
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px">Google Gemini</td><td style="padding:8px 6px">үнэгүй tier дээр "limit: 0" (quota тэг) — 2 тусдаа шинэ project дээр ч давтагдсан. Дараа нь тодорхой болсон: <strong>billing (Cloud Prepay) тохируулаагүй бол үнэгүй tier-ийн quota олгогддоггүй</strong> — доод тал нь $10-ын урьдчилсан төлбөр ("Buy credits") шаарддаг, жинхэнэ "100% үнэгүй" биш</td></tr>
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px">DeepSeek</td><td style="padding:8px 6px">402 Insufficient Balance — prepaid balance заавал шаардана</td></tr>
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px">Kimi (Moonshot AI)</td><td style="padding:8px 6px">"suspended due to insufficient balance" — мөн prepaid balance шаардана</td></tr>
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px">Groq</td><td style="padding:8px 6px">Бүртгүүлэх үе шатандаа алдаа (бүс нутгийн хязгаарлалт байж болзошгүй, баталгаажаагүй)</td></tr>
+            <tr><td style="padding:8px 6px">GitHub Models</td><td style="padding:8px 6px">Тестэлж үзсэн URL олдоогүй (404) — Клодын өгсөн зам буруу байсан байж магадгүй</td></tr>
+          </table>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6;margin-top:10px"><strong>Дүгнэлт:</strong> үнэхээр "100% үнэгүй, урт хугацаанд найдвартай" LLM API олдсонгүй. Ихэнх үйлчилгээ доод тал нь карт баталгаажуулалт/бага хэмжээний урьдчилсан төлбөр шаарддаг нь тодорхой болсон (spam/bot акаунтаас сэргийлэх зорилготой байж магадгүй). <strong>Шийдвэрлэсэн зам:</strong> Google Gemini дээр $10 орчим Cloud Prepay хийж, тогтвортой ажиллуулах — хэрэглээ бага (зөвхөн ажлын бус цагт) тул удаан хугацаанд хүрэлцэх төлөвтэй.</p>
+
+          <h4 style="margin:16px 0 6px">📌 Supabase Edge Function Secrets — цаашид юу хийх вэ</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Cosmo-г ажиллуулахын тулд AI provider-ийн API key-г Supabase-ийн "Secrets" (нууц тохиргоо) хэсэгт хадгална — код дотор шууд бичихгүй, зөвхөн орчны хувьсагчаар (`Deno.env.get(...)`) уншина. Үүнийг ингэж хийнэ:</p>
+          <ol style="color:var(--text-dim);font-size:13px;line-height:1.8;margin:6px 0 0 20px">
+            <li><a href="https://supabase.com/dashboard/project/ndbhgzohmjumicziefnr/functions" target="_blank">Supabase Dashboard → Edge Functions</a> руу орно</li>
+            <li>Жагсаалтаас <strong>"cosmo"</strong> функцийг сонгоно</li>
+            <li Дотор нь <strong>"Secrets"</strong> (эсвэл "Manage secrets") tab руу орно</li>
+            <li>"Add new secret" дараад:
+              <ul style="margin:4px 0 0 18px">
+                <li>Name талбарт: AI provider-ийн код дотор ашигласан яг тэр нэрийг өгнө (жишээ нь <code class="inline">GEMINI_API_KEY</code>)</li>
+                <li>Value талбарт: тухайн үйлчилгээнээс авсан бүтэн API key-г буулгана (тасрахгүй, бүтнээр нь)</li>
+              </ul>
+            </li>
+            <li>"Save" дарна — секрет шууд идэвхжинэ, функцийг дахин deploy хийх шаардлагагүй</li>
+          </ol>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6;margin-top:10px">⚠️ <strong>Чухал:</strong> `cosmo.js`-ийн код дотроо аль AI provider дуудахаар бичигдсэнээс (одоогийн формат/endpoint) hамааруулан secret-ийн НЭР таарч байх ёстой. Хэрэв provider солигдвол (жишээ нь DeepSeek → Kimi → Gemini гэх мэт аль хэдийн болсончлон), код дотрох `Deno.env.get("...")`-ийн нэр ХАМТ солигдох ёстой — зөвхөн Secret нэмээд код хөндөхгүй бол ажиллахгүй.</p>
+
+          <h4 style="margin:16px 0 6px">Архитектур</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Supabase Edge Function (gate-webhook/send-push-тэй адил зарчим) — Supabase-ийн cloud серверт байнга ажиллана, ГЭДЭГ УЧИР бүх компьютер (админ, ажилтан, резидент) унтраатай байсан ч ажиллана.</p>
+
           <h4 style="margin:16px 0 6px">Эрсдэлийн зэрэглэлээр хамрах хүрээ</h4>
-          <div style="color:var(--success);font-weight:700;font-size:13px;margin-top:10px">🟢 v1-д зөвшөөрөгдсөн (бодит тоо унших/дүгнэх, ТААМАГЛАХГүй)</div>
+          <div style="color:var(--success);font-weight:700;font-size:13px;margin-top:10px">🟢 v1-д зөвшөөрөгдсөн (бодит тоо унших/дүгнэх, ТААМАГЛАХГҮй)</div>
           <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
             <li>Хэрэглэгчийн ӨӨРИЙН нэхэмжлэхийн задаргаа (Payment хуудасны бодит өгөгдөл)</li>
             <li>Тариф тохиргооны хүчинтэй мэдээлэл (тогтмол, батлагдсан тоо)</li>
             <li>Мэдээ, мэдээлэл хуудсанд нийтлэгдсэн агуулга хайх/базах</li>
-            <li>СӨХ-ийн орлого/зарлагын ЕРӨНХИЙ ТОЙМ — зөвхөн ОДОО байгаа тоог хэлнэ ("энэ сарын орлого X₮"), "яагаад", "ирээдүйд яах" гэж ТАЙЛБАРЛАХГүй</li>
+            <li>СӨХ-ийн орлого/зарлагын ЕРӨНХИЙ ТОЙМ — зөвхөн ОДОО байгаа тоог хэлнэ, "яагаад", "ирээдүйд яах" гэж ТАЙЛБАРЛАХГҮй</li>
           </ul>
           <div style="color:var(--danger);font-weight:700;font-size:13px;margin-top:14px">🔴 v2-т хойшлуулсан (эрсдэл өндөр тул admin review шаардтай)</div>
           <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
-            <li>Хянах самбар/зах зээлийн үнэлгээ чартуудыг шинжилж тренд тодорхойлох, сар/улирлаар прогноз хийх — AI шинэ тоон дүгнэлт "зохион бүтээж" байгаа тул буруу гарвал СӨХ-ийн нэр хүнд, хүмүүсийн итгэлд шууд нөлөөлнө. Хэрэгжүүлэх бол зөвхөн admin ЭХЛЭЭД хянаж зөвшөөрсний дараа л резидентэд харуулна (шууд, шүүлтүүргүй биш)</li>
+            <li>Хянах самбар/зах зээлийн үнэлгээ чартуудыг шинжилж тренд тодорхойлох, сар/улирлаар прогноз хийх</li>
           </ul>
-
-          <h4 style="margin:16px 0 6px">Шаардлагатай шинэ модуль (жишээ загвар: "Хаалтны тариф")</h4>
-          <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
-            <li>AI идэвхжүүлэх/унтраах үндсэн toggle</li>
-            <li>Ажлын бус цаг (эхлэх/дуусах цаг, амралтын өдрүүд) тохиргоо</li>
-            <li>Хүлээх хугацаа (X минут ажилтан хариулаагүй бол идэвхжинэ)</li>
-            <li>Мэдээллийн сан (Admin-ийн бэлдсэн Асуулт-Хариулт хос, шаардлагатай бол)</li>
-            <li>AI-ийн хариулт бүрт "🤖 Автомат хариу" тодорхой тэмдэглэгээ</li>
-            <li>Хамрах хүрээнээс гадуурх асуулт → шууд "Ажилтантай холбогдоно уу" гэж хариулж, эскалаци хийнэ</li>
-          </ul>
-
-          <h4 style="margin:16px 0 6px">Шийдвэр</h4>
-          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Энэ ажлыг ОДОО (2026-08-02-ний chat session-д) ЭХЛүүЛЭХГүй гэж шийдсэн — context хэтэрхий хуримтлагдсан тул алдаа гаргах эрсдэл өндөр. ШИНЭ, цэвэр chat session дээр л эхлүүлнэ.</p>
         </div>
       </div>
 
@@ -1915,6 +2028,114 @@
 
           <h4 style="margin:16px 0 6px">Санал</h4>
           <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Одоохондоо домайноо бүртгүүлээд, "Хувилбар А" (relative зам хадгалагдсан) хэлбэрээр орох нь хамгийн зүйтэй — олон хотхонд өргөтгөх шийдвэрийг бодит үйлчлүүлэгчийн тоо гарсны дараа, шаардлагатай үед нь авч үзэх.</p>
+        </div>
+      </div>
+
+      <!-- ТАБ 4: SERVER MIGRATION -->
+      <div id="ai-plan-tab-servermigration" style="display:none">
+        <div class="card mb-16" style="padding:20px">
+          <div class="section-title" style="margin-bottom:4px">💡 Асуулт-хариулт — Supabase-ийн тогтвортой байдал, шилжих боломж (2026-08-04)</div>
+          <div style="color:var(--text-muted);font-size:12.5px;margin-bottom:16px">Хэрэглэгчийн асуултад Клод хариулсан яриаг тэмдэглэв — хэрэгжүүлэх шаардлагагүй, зөвхөн мэдээллийн зорилготой урьдчилсан бэлтгэл.</div>
+
+          <h4 style="margin:16px 0 6px">❓ Асуулт: Supabase хэр тогтвортой ажиллах бол? Хэрэв өөр cloud server сонгох асуудал үүсвэл хэр багтаамжтай ажил үүсэх вэ? Postgres ангилалын cloud server хайх хэрэгтэй болох уу?</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Supabase бол нээлттэй эх (open-source) PostgreSQL дээр суурилсан, олон мянган компани ашигладаг, сайн санхүүжилттэй BaaS (backend-as-a-service) — ерөнхийдөө production-д найдвартай гэж тооцогддог платформ. Бүх cloud үйлчилгээтэй адил тэр үе үе доголдох (outage) эрсдэл бий, гэхдээ энэ нь Supabase-д онцгой түгээмэл алдаа гэдгээр танигдаагүй.</p>
+
+          <h4 style="margin:16px 0 6px">Хэрэв өөр cloud руу шилжих шаардлагатай болвол — 2 давхарга</h4>
+          <div style="color:var(--success);font-weight:700;font-size:13px;margin-top:10px">🟢 Database (Postgres өөрөө) — бүрэн шилжүүлж болно</div>
+          <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
+            <li><code class="inline">pg_dump</code>/<code class="inline">pg_restore</code>-оор AWS RDS, Google Cloud SQL, DigitalOcean, Neon, Railway гэх мэт ЯМАР ч Postgres-compatible серверт шилжүүлж болно</li>
+            <li>Схем, өгөгдлийн бүтэц, RLS policy, function-үүд бүгд стандарт Postgres тул ямар ч хөрвүүлэлт шаардахгүй</li>
+          </ul>
+          <div style="color:var(--danger);font-weight:700;font-size:13px;margin-top:14px">🔴 Auth / Storage / Realtime / Edge Functions — Supabase-SPECIFIC давхарга</div>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Танай апп эдгээр 4 үйлчилгээг маш гүнзгий ашигладаг — эдгээр нь СТАНДАРТ Postgres хэсэг БИШ, зөвхөн Supabase-ийн өөрийн давхарга:</p>
+          <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
+            <li><strong>Auth</strong> (нэвтрэлт, session, <code class="inline">sb.auth.*</code> дуудлагууд) — GoTrue сервис</li>
+            <li><strong>Storage</strong> (файл upload, signed URL) — Storage API</li>
+            <li><strong>Realtime</strong> (CC messenger typing indicator, шинэ мсж мэдэгдэл) — Realtime сервис</li>
+            <li><strong>Edge Functions</strong> (qpay-webhook, gate-webhook, user-management, send-push) — Deno-based функцүүд</li>
+          </ul>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6">Тиймээс "энгийн Postgres cloud server" хайх нь <strong>хагас шийдэл л болно</strong> — auth/storage/realtime/edge functions-ийг шинээр бүтээх (эсвэл өөр үйлчилгээгээр орлуулах) шаардлагатай болно, энэ бол их хэмжээний дахин хөгжүүлэлт.</p>
+
+          <h4 style="margin:16px 0 6px">❓ Асуулт: Supabase self-hosted гэдгийг маш энгийнээр тайлбарлана уу</h4>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6"><strong>Одоо байгаа хувилбар (Supabase Cloud):</strong> Supabase-ийн компанийн өмчлдөг сервер дээр "түрээслэгч" шиг — тэд серверийг хадгалж, засварлаж, ажиллуулж өгдөг, та зөвхөн үйлчилгээг ашигладаг, сар бүрийн төлбөр төлдөг ("apartment rent" шиг).</p>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6"><strong>Self-hosted гэдэг нь:</strong> Яг тэр л программ хангамжийг (Postgres, Auth, Storage, Realtime — бүгд нээлттэй эх, үнэгүй код) өөрийн худалдаж авсан/түрээссэн серверт (DigitalOcean, AWS, эсвэл өөрийн физик компьютер дээр) суулгаад өөрөө ажиллуулна гэсэн үг — "апартмент худалдаж авах" шиг.</p>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6"><strong>Хамгийн энгийн зүйрлэл:</strong> Netflix (компанийн сервер, сар бүр төлдөг) ба өөрийн худалдаж авсан кино (нэг удаа зардал гаргаад, дараа нь өөрийн харах DVD/файл) хоёрын ялгаа шиг — контент (өгөгдөл) ижил, зөвхөн хэн хадгалж, ажиллуулж байгаагаараа ялгаатай.</p>
+
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-top:12px">
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px;color:var(--text-muted)"></td><td style="padding:8px 6px;font-weight:700">Supabase Cloud (одоогийн)</td><td style="padding:8px 6px;font-weight:700">Supabase Self-hosted</td></tr>
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px;color:var(--text-muted)">Сервер хэн эзэмшдэг</td><td style="padding:8px 6px">Supabase компани</td><td style="padding:8px 6px">Та (өөрийн худалдаж авсан VPS)</td></tr>
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px;color:var(--text-muted)">Төлбөр</td><td style="padding:8px 6px">Сар бүр (одоо үнэгүй, хожим $25+)</td><td style="padding:8px 6px">Зөвхөн серверийн төлбөр (сар бүр ~$10-30, үйлчилгээ биш)</td></tr>
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px;color:var(--text-muted)">Сервер удирдлага (upgrade, backup, аюулгүй байдал)</td><td style="padding:8px 6px">Supabase-ийн хариуцлагаар (та юу ч хийхгүй)</td><td style="padding:8px 6px">ТА өөрөө (эсвэл IT мэргэжилтэн) хариуцна</td></tr>
+            <tr style="border-bottom:1px solid var(--border-card)"><td style="padding:8px 6px;color:var(--text-muted)">Кодын өөрчлөлт (suh.html, userapp)</td><td style="padding:8px 6px">Хэрэггүй — одоогийн код бүрэн ажиллана</td><td style="padding:8px 6px">Хэрэггүй — зөвхөн серверийн хаяг (SUPABASE_URL) л солигдоно</td></tr>
+            <tr><td style="padding:8px 6px;color:var(--text-muted)">Ажиллагаа зогсох эрсдэл</td><td style="padding:8px 6px">Supabase дагалдвол таны апп зогсоно</td><td style="padding:8px 6px">Таны серверээс л хамаарна, Supabase-ийн outage нөлөөлдэггүй</td></tr>
+          </table>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.6;margin-top:10px"><strong>Бодит зардал (мөнгөн бус):</strong> Self-hosted-д IT мэдлэг шаардана — сервер суулгах, аюулгүй байдал (SSL, firewall), backup, шинэчлэлт хийхийг өөрөө (эсвэл хүний хөлслөн авч) хариуцах ёстой болно.</p>
+
+          <h4 style="margin:16px 0 6px">➕ Клодын нэмэлт зөвлөмж (асуултаас гадна)</h4>
+          <ul style="color:var(--text-dim);font-size:13px;line-height:1.7;margin:6px 0 0 20px">
+            <li><strong>Тогтмол backup-ыг ОДОО эхлүүл</strong> — self-host руу шилжих эсэхээс үл хамааран, <code class="inline">pg_dump</code>-ээр үе шаттай (жишээ нь долоо хоног бүр) бүтэн database-ийн хуулбарыг тусдаа газар (Google Drive, өөр cloud storage) хадгалах дадал ЭДүүГЭЭР эхлүүлэх нь зүйтэй — Supabase Free tier дээр автомат point-in-time backup үйлчилгээ ХЯЗГААРЛАГДМАЛ (Pro tier-д илүү сайн)</li>
+            <li><strong>Usage dashboard-ыг үе үе шалгаж байх</strong> — Database/Storage хэрэглээ 70-80%-д хүрэхээс өмнө анзаарч, төлөвлөгөөтэйгээр Pro tier рүү шилжих (яаралтай бус, төлөвлөсөн шилжилт)</li>
+            <li><strong>Шийдвэрийг яаралтай гаргах шаардлагагүй</strong> — одоогийн хэрэглээ (Database ~3%, Storage ~3%) хязгаараас маш хол, энэ бол дунд-урт хугацааны бэлтгэлийн мэдээлэл гэдгийг сануулъя</li>
+            <li><strong>Хэрэв ирээдүйд self-host руу шилжвэл</strong> — шинэ орчинд ШИЛЖИХЭЭСЭЭ өмнө staging орчинд (тест хувилбар дээр) бүх Auth/Storage/Realtime урсгалыг бүрэн шалгаж баталгаажуулах шаардлагатай, учир нь self-hosted Supabase-ийн хувилбар (version) Cloud-той яг тэнцүү бус байж болзошгүй, зан авир бага зэрэг өөр байх эрсдэлтэй</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ТАБ 5: EXTRA DEV IDEAS -->
+      <div id="ai-plan-tab-extraideas" style="display:none">
+        <div class="card mb-16" style="padding:20px">
+          <div class="section-title" style="margin-bottom:4px">💡 Нэмэлт хөгжүүлэлтийн санаанууд (2026-08-04)</div>
+          <div style="color:var(--text-muted);font-size:12.5px;margin-bottom:16px">Хэрэглэгчийн хүсэлтээр Клод боловсруулсан, өрсөлдөгчид түгээмэл байхгүй/цоо шинэ модулийн санаанууд — брэйнсторм жагсаалт, хэрэгжүүлэх төлөвлөгөө хараахан гараагүй.</div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">1. Үндсэн хөрөнгийн урьдчилсан засвар/арчилгааны төлөвлөгөө (Predictive Maintenance)</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Лифт, зуух, дээвэр зэргийн насжилт/баталгааны хугацаа/үйлчилгээний давтамжийг бүртгэж, засвар шаардагдахаас өмнө автомат сануулга өгнө.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">2. Ашиглалтын хэвийн бус байдал илрүүлэгч (Utility Anomaly Detection)</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Резидент бүрийн цахилгаан/дулаан/ус зарцуулалтыг хугацааны явцад дүрслэж, гэнэтийн өсөлт (алдагдал, тоолуур гэмтэл) илэрвэл автомат анхааруулга өгнө.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">3. Нийтийн тээврийн интеграц</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Гарах товч дарахад ойрхон автобусны буудал + ирэх цагийг харуулна (GTFS/УБ тээврийн мэдээлэлтэй холбогдоно).</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">4. Хүсэлт/гэрээний цахим гарын үсэг + баримт бичгийн сан</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Засварын зөвшөөрөл, түрээсийн гэрээг цахимаар хадгалж, гарын үсэг зурж, аудит trail-тай болгоно.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">5. Баримт бичгийн зурган таних (OCR)-ээр зардал бүртгэл</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Засварын нэхэмжлэхийн зургаас AI автоматаар үйлчлүүлэгч/дүн/огноог таньж НББ систем рүү бүртгэдэг болгоно.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">6. Эзэмшлийн хувиар жинлэгдсэн санал хураалт</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">СӨХ-ийн хуулийн дагуу санал хураалтыг тоотын хувь хэмжээгээр жинлэдэг болгоно ("1 хүн 1 санал" бус).</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">7. Нөөц сангийн урьдчилсан төлөвлөгөө (Reserve Fund Forecasting)</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Ирээдүйн том засварын хугацаа/өртөгийг тооцоолж, "нөөц сан хэдэн жилийн дараа хүрэлцэхгүй болно" гэдгийг урьдчилан харуулна.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">8. Удирдах зөвлөлийн хурлын удирдлагын модуль</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Хурал товлох, ирц/quorum-ыг эзэмшлийн хувиар автоматаар тооцох, тэмдэглэл/шийдвэрийн архив хөтлөх.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">9. Резидентүүдийн хоорондын жижиг зах зээл/үйлчилгээний лавлах</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Резидентүүд өөрсдийн үйлчилгээг (цахилгаанчин, багш г.м) санал болгодог, харилцан туслалцах платформ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">10. QR-код-той зочин/илгээмжийн урьдчилсан бүртгэл</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Резидент зочноо/илгээмжээ урьдчилан QR-ээр бүртгэж, харуул баталгаажуулж, push мэдэгдэл илгээнэ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">11. Гэмтэл/эвдрэлийг барилгын зурагт тэмдэглэх систем</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Резидент гэмтлийг барилгын зурган дээр байрлуулж мэдээлдэг, засварын багт визуалаар харуулна.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">12. Өр барагдуулах хуулийн дагуух автомат урсгал</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Хугацаа хэтэрсэн төлбөрийн дараалсан сануулга (эрхэм зөөлөн→албан→хуулийн) автомат үүсгэж, бичиг баримтыг template-аас бэлдэнэ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">13. Хүйтний улирлын аюулгүй байдлын автомат сануулга</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Цаг агаарын API-тай холбогдож, хүйтэрхэд/цасны ачаалал ихсэхэд автомат сануулга өгнө.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">14. Нүүрсний хий/утааны мэдрэгч интеграц (IoT аюулгүй байдал)</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Зуухны хийн хордлогоос сэргийлж мэдрэгч байрлуулж, dashboard-аар хянана, ослын үед шууд мэдэгдэнэ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">15. Гэрээт компаний үнэлгээ, сонголтын ил тод систем</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Үйлчилгээ үзүүлэгчдийн туршлага/үнийн санал/гүйцэтгэлийн түүхийг бүртгэж, ил тод сонголт хийх боломж өгнө.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">16. Хуулийн/зохицуулалтын хугацааны хяналтын хуанли</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Татварын тайлан, галын аюулгүй байдлын шалгалт, лифтний баталгаажуулалт зэрэг хугацааг алгасахаас сэргийлнэ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">17. Гэр орны нүүлт/шилжилтийн зурган баримтжуулалт</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Резидент шинээр орох/гарахдаа орон сууцны байдлыг зурган баримтжуулж, маргаанаас сэргийлнэ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">18. Олон нийтийн хямд худалдан авалт зохион байгуулах</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Даатгал, дулаалга, нар хүчний систем зэрэгт олон СӨХ/резидент нэгдэж хямдралтай үнээр авах боломж.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">19. Ажилтны байршил/явцын хяналт</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Жижүүр/цэвэрлэгч ажилтан ажилдаа ирэх/тарах цагийг QR/GPS-ээр бүртгүүлж, хуваарь автоматаар үүсгэнэ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">20. Хамтын зогсоолын ухаалаг хуваарилалт</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Зогсоолын байр сул эсэхийг мэдрэгч/camera-аар мэдэж, резидентүүд хооронд түр солилцоо зохион байгуулна.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">21. Резидентүүдийн ур чадвар/дасгал сургалтын үүл үзэгдэл сан</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Гал түймэр, газар хөдлөлтийн үед хэрхэн ажиллах зөвлөгөө, амьд сургалт видео контент.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">22. Резидентүүдийн санал хүсэлтийн олон нийтийн санал хураалт (upvote)</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Төсөв/засварын төлөвлөгөөнд юуг эн тэргүүнд хийхийг резидентүүд саналаар эрэмбэлдэг ил тод жагсаалт.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">23. Барилгын эрчим хүчний үнэлгээ ба тогтвортой байдлын оноо</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Нийт эрчим хүчний хэрэглээг тооцож, өөр СӨХ-тэй харьцуулсан "green score" өгнө.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">24. Дуу хүчнээс хамгаалах, орон сууцны чанарын гомдол бүртгэл</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Дуу шуугиан, тамхины үнэр зэрэг гомдлыг албан ёсны бүртгэлийн систем болгож, давтагдах гомдлыг илрүүлнэ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">25. Хүүхдийн аюулгүй байдлын бүс</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Тоглоомын талбай/орц камерт AI-аар хүүхэд ганцаараа удаан хугацаагаар үлдсэн эсэхийг илрүүлж мэдэгднэ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">26. Тахир дутуу/өндөр настай иргэдэд зориулсан хүртээмжийн зураглал</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Налуу зам/тусгай лифт байгаа газрыг тэмдэглэсэн дотоод зураглал + SOS товч.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">27. e-Mongolia-тай интеграц</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Регистрийн дугаараар иргэний мэдээллийг автоматаар баталгаажуулж, давхар бүртгэлээс сэргийлнэ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">28. Олон хэлний дэмжлэг</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Гадаад иргэн резидентэд зориулж апп-ыг олон хэлтэй (англи, хятад, солонгос) болгоно.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">29. 24/7 AI chatbot (давтагдсан асуултад)</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Тарифын мэдээлэл, төлбөрийн заавар зэрэгт шууд хариулж, ажилтны ачааллыг бууруулна.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">30. Блокчейн-суурьтай ил тод санал хураалт</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Санал өгөлтийг өөрчлөх боломжгүй болгож, аудит хийхэд бэлэн, залилалын сэжиглэлийг арилгана.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">31. Барилгын бүтцийн эрүүл мэндийн хяналт (Structural Health Monitoring)</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Ан цав, чичиргээ хэмжигч мэдрэгчээр бүтцийн өөрчлөлтийг хянаж, эрт сэрэмжлүүлнэ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">32. Лифтний чичиргээ мэдрэгч-суурьтай урьдчилсан оношлогоо</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">IoT мэдрэгчээр лифтний чимээ/чичиргээг хэмжиж, гэмтэл гарахаас өмнө хэвийн бус зүй тогтлыг илрүүлнэ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">33. Даатгалын нэхэмжлэлийн удирдлагын модуль</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Гал/үер/эвдрэлийн үед даатгалын компанитай харилцах баримт бичиг, зураг, явцыг нэг дороос удирдана.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">34. Хог хаягдлын менежмент ба дахин боловсруулалтын хяналт</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Хогийн савны дүүргэлтийг мэдрэгчээр хэмжиж, оновчтой хуваарь өгч, ялгаварлан хоглогчдод урамшуулал өгнө.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">35. Резидентүүдийн санал дүн шинжилгээний хяналтын самбар (NPS Survey)</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Үе шаттай богино судалгаа явуулж, сэтгэл ханамжийн трендийг харуулна.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">36. Цахилгаан тээврийн хэрэгслийн цэнэглэх станцын удирдлага</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">EV цэнэглэх цэгүүдийн эзэмшил хуваарилалт, төлбөр тооцоо, ашиглалтын түүхийг удирдана.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">37. Оффлайн горим (интернет тасарсан үед)</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Сүүлд амжилттай синхрончлогдсон өгөгдлийг локал хадгалж, дахин холбогдоход автоматаар синк хийдэг PWA боломж.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">38. Гэр бүлийн эрүүл мэндийн яаралтай мэдээллийн профайл</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Резидент бүр цусны бүлэг, харшил гэх мэт мэдээллийг нууцаар хадгалж, яаралтай тусламжийн багт зөвшөөрлийн дагуу хандах эрх өгнө.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">39. Дахин зарах/түрээслэх орон сууцны платформ</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Резидент байрны худалдаа/түрээсийн зарыг СӨХ-ийн платформ дотор нийтэлж, шинэ орогчдын шилжилтийг хялбарчилна.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">40. Ундны усны чанарын хяналт</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Усны шинжилгээний үр дүнг тогтмол оруулж, стандартаас гажсан үед автомат мэдэгдэл өгнө.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">41. Барилгын дуу авианы түвшний зураглал</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Үе үе хэмжилт хийж, аль давхар/хэсэгт дуу шуугиан ихсдэгийг зураглаж, засварын төлөвлөгөөнд ашиглана.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">42. Зочны давтамжийн аюулгүй байдлын шинжилгээ</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Аюулгүй байдлын зорилгоор ижил зочин байнга ирж байгаа эсэхийг хянана.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">43. Хамтын орон зайн захиалгын систем</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Хурлын өрөө, тоглоомын талбай, барбекю талбайн цагийн хуваарь захиалга, зөрчилдөөнөөс сэргийлнэ.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">44. Даатгалын хугацааны сануулагч</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Жил бүрийн даатгалын хугацаа дуусахаас өмнө автомат сануулга, шинэчлэх урьдчилсан төлөвлөгөө өгнө.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">45. Ухаалаг гэрэлтүүлгийн удирдлага</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Motion-sensor гэрэлтүүлгийн эрчим хүчний хэмнэлтийн хяналтын самбар.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">46. Резидентийн зээлжих чадавхийн тайлан</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Төлбөрийн түүхэд тулгуурласан зөвлөмж, ялангуяа шинэ орогч резидентүүдэд.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">47. Хамтын тээврийн зохион байгуулалт</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Резидентүүдийн хооронд carpool/rideshare зохион байгуулах.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">48. Орон сууцны дахин тохижилтын зөвшөөрлийн урсгал</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Засварын зөвшөөрлийг зурган баримтжуулалттай урсгалаар хүсэлт/зөвшөөрч өгнө.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">49. QR код бүхий засварын түүхийн лавлагаа</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">Тоноглол дээрх QR кодыг сканердаад түүний засварын түүхийг харах боломж өгнө.</div></div>
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-card)"><div style="font-size:13px;font-weight:700;color:var(--text)">50. Хэрэглэгчийн санал хүсэлтийн AI ангилал/чиглүүлэлт</div><div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5">AI ашиглан резидентийн гомдол/хүсэлтийг автоматаар ангилж, зөв хэлтэст чиглүүлнэ.</div></div>
         </div>
       </div>
     </div>
@@ -1995,7 +2216,7 @@
               <option value="market-valuation">Зах зээлийн үнэлгээ</option>
               <option value="auth_levels">Хандах эрхийн тохиргоо</option>
               <option value="users">Хэрэглэгч удирдлага</option>
-              <option value="app-settings">Апп тохиргоо</option>
+              <option value="app-settings">UserApp тохиргоо</option>
             </select>
           </div>
           <button class="btn btn-outline btn-sm" onclick="renderActivityLogPage()">↻ Шинэчлэх</button>
@@ -4774,7 +4995,7 @@ let notifications = [
 // ============================================================
 // Хуудасны нэр -> Монгол гарчиг. showPage() болон Хэрэглэгчийн удирдлагын "Онлайн" багана
 // хоёулаа нэг эх сурвалжийг ашиглана — давхардуулахгүйн тулд эндэ нэг л газар тодорхойлов.
-const PAGE_LABELS = {dashboard:'Хянах самбар',residents:'Сууц өмчлөгчийн бүртгэл',business:'Аж ахуйн нэгж бүртгэл',clientele:'Харилцагчийн бүртгэл',finance:'Гүйлгээний бүртгэл',assets:'Үндсэн хөрөнгө бүртгэл',payments:'Төлбөр төлөлт',apartments:'Тоот, зогсоол, агуулах',reports:'СӨХ дотоод тайлан',fintax:'Санхүү, татварын тайлан',communications:'Зар, мэдэгдэл илгээх','cc-center':'CC center','gate-log':'Хаалтны удирдлага','news':'Мэдээ, мэдээлэл','newseditor':'Мэдээний агрегат',admin:'Хаягжилт тохиргоо','sokh-settings':'СӨХ тохиргоо','tariff-settings':'Тариф тохиргоо','market-valuation':'Зах зээлийн үнэлгээ',auth_levels:'Хандах эрхийн тохиргоо',users:'Хэрэглэгч удирдлага',polls:'Сонгууль, санал асуулга',accounting:'Нягтлан бодох бүртгэл','nbb-settings':'НББ тохиргоо','asset-settings':'Үндсэн хөрөнгө тохиргоо',employees:'Ажилтны бүртгэл','app-settings':'Апп тохиргоо','ai-integration-plan':'AI Integration Plan'};
+const PAGE_LABELS = {dashboard:'Хянах самбар',residents:'Сууц өмчлөгчийн бүртгэл',business:'Аж ахуйн нэгж бүртгэл',clientele:'Харилцагчийн бүртгэл',finance:'Гүйлгээний бүртгэл',assets:'Үндсэн хөрөнгө бүртгэл',payments:'Төлбөр төлөлт',apartments:'Тоот, зогсоол, агуулах',reports:'СӨХ дотоод тайлан',fintax:'Санхүү, татварын тайлан',communications:'Зар, мэдэгдэл илгээх','cc-center':'CC center','gate-log':'Хаалтны удирдлага','news':'Мэдээ, мэдээлэл','newseditor':'Мэдээний агрегат',admin:'Хаягжилт тохиргоо','sokh-settings':'СӨХ тохиргоо','tariff-settings':'Тариф тохиргоо','market-valuation':'Зах зээлийн үнэлгээ',auth_levels:'Хандах эрхийн тохиргоо',users:'Хэрэглэгч удирдлага',polls:'Сонгууль, санал асуулга',accounting:'Нягтлан бодох бүртгэл','nbb-settings':'НББ тохиргоо','asset-settings':'Үндсэн хөрөнгө тохиргоо',employees:'Ажилтны бүртгэл','app-settings':'UserApp тохиргоо','ai-integration-plan':'AI Integration Plan','cosmo-settings':'Cosmo тохиргоо'};
 function showPage(name) {
   // Эрхийн шалгалт — эрхгүй хуудсыг нээхээс сэргийлнэ (зөвхөн naү-г нуухаас гадна)
   if(typeof canAccessPage === 'function' && !canAccessPage(name)) {
@@ -4801,6 +5022,7 @@ function showPage(name) {
   if(name==='fintax') renderGovReportsPage();
   if(name==='communications') renderNotificationsPage();
   if(name==='app-settings') { renderAppSettingsModulesList(); loadCallServiceList(); loadEmergencyContactsList(); }
+  if(name==='cosmo-settings') renderCosmoSettingsPage();
   if(name==='cc-center') renderCCCenterPage();
   if(name==='gate-log') renderGateControlPage();
   if(name==='activity-log') renderActivityLogPage();
@@ -5880,7 +6102,7 @@ const ROLE_LABELS = {
   mn:'Менежер', ot:'Сууц өмчлөгч'
 };
 // Зөвхөн admin-д харагдах nav items
-const ADMIN_ONLY_PAGES = ['admin', 'tariff-settings', 'market-valuation', 'auth_levels', 'users', 'nbb-settings', 'asset-settings', 'sokh-settings', 'app-settings', 'activity-log', 'ai-integration-plan'];
+const ADMIN_ONLY_PAGES = ['admin', 'tariff-settings', 'market-valuation', 'auth_levels', 'users', 'nbb-settings', 'asset-settings', 'sokh-settings', 'app-settings', 'activity-log', 'ai-integration-plan', 'cosmo-settings'];
 // Нэвтрэх шаардлагагүй хуудас байхгүй — бүгд нэвтэрсэн байх ёстой
 
 let currentUser = null;      // Supabase auth user
@@ -6550,6 +6772,8 @@ function switchAiPlanTab(name, el) {
   document.getElementById('ai-plan-tab-cc').style.display = name === 'cc' ? 'block' : 'none';
   document.getElementById('ai-plan-tab-camera').style.display = name === 'camera' ? 'block' : 'none';
   document.getElementById('ai-plan-tab-domain').style.display = name === 'domain' ? 'block' : 'none';
+  document.getElementById('ai-plan-tab-servermigration').style.display = name === 'servermigration' ? 'block' : 'none';
+  document.getElementById('ai-plan-tab-extraideas').style.display = name === 'extraideas' ? 'block' : 'none';
   document.querySelectorAll('#ai-plan-tabs .tab').forEach(t => t.classList.remove('active'));
   if (el) el.classList.add('active');
 }
@@ -6633,6 +6857,65 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   // Session шалгах — нэвтэрсэн байвал шууд ачаална
   await checkExistingSession();
 });
+
+// ─────────────────────────────────────────────────────────────
+// COSMO ТОХИРГОО (2026-08-04 нэмэв)
+// ─────────────────────────────────────────────────────────────
+async function renderCosmoSettingsPage() {
+  const { data, error } = await sb.from('settings').select('value').eq('key', 'cosmo').single();
+  if (error) { console.error('cosmo settings ачаалахад алдаа:', error.message); return; }
+  const cfg = data.value;
+
+  document.getElementById('cosmo-enabled').checked = !!cfg.enabled;
+  document.getElementById('cosmo-work-start').value = cfg.work_hours?.start || '09:00';
+  document.getElementById('cosmo-work-end').value = cfg.work_hours?.end || '18:00';
+  document.querySelectorAll('.cosmo-day').forEach(cb => {
+    cb.checked = (cfg.work_hours?.days || []).includes(Number(cb.value));
+  });
+  document.getElementById('cosmo-scope-news').checked = !!cfg.data_scope?.news;
+  document.getElementById('cosmo-scope-polls').checked = !!cfg.data_scope?.polls_aggregate;
+  document.getElementById('cosmo-scope-market').checked = !!cfg.data_scope?.market_valuation_trend;
+  document.getElementById('cosmo-scope-financial').checked = !!cfg.data_scope?.financial_overview_aggregate;
+  document.getElementById('cosmo-response-depth').value = cfg.response_depth || 'short';
+  document.getElementById('cosmo-extra-prompt').value = cfg.extra_prompt || '';
+
+  const { data: logs } = await sb.from('cosmo_log').select('*').order('created_at', { ascending: false }).limit(20);
+  const el = document.getElementById('cosmo-log-list');
+  if (!logs || !logs.length) { el.innerHTML = '<div class="empty-state">Лог хараахан алга</div>'; return; }
+  el.innerHTML = logs.map(l => `
+    <div style="padding:8px 0;border-bottom:1px solid var(--border-card)">
+      <div><strong>${l.mode === 'analyst' ? 'Analyst' : 'Тоот ' + l.apt}</strong> · ${new Date(l.created_at).toLocaleString('mn-MN')} ${l.rate_limited ? '<span style="color:var(--danger)">(rate limited)</span>' : ''}</div>
+      <div style="color:var(--text-muted)">Асуулт: ${esc(l.question || '')}</div>
+      ${l.answer ? `<div style="color:var(--text-muted)">Хариулт: ${esc(l.answer)}</div>` : ''}
+    </div>`).join('');
+}
+
+async function saveCosmoSettings() {
+  const cfg = {
+    enabled: document.getElementById('cosmo-enabled').checked,
+    work_hours: {
+      days: Array.from(document.querySelectorAll('.cosmo-day:checked')).map(cb => Number(cb.value)),
+      start: document.getElementById('cosmo-work-start').value,
+      end: document.getElementById('cosmo-work-end').value,
+    },
+    data_scope: {
+      report_own_only: true, // хатуу тогтмол, тохиргоогоор өөрчлөгддөггүй
+      news: document.getElementById('cosmo-scope-news').checked,
+      polls_aggregate: document.getElementById('cosmo-scope-polls').checked,
+      market_valuation_trend: document.getElementById('cosmo-scope-market').checked,
+      financial_overview_aggregate: document.getElementById('cosmo-scope-financial').checked,
+    },
+    response_depth: document.getElementById('cosmo-response-depth').value,
+    extra_prompt: document.getElementById('cosmo-extra-prompt').value.trim(),
+  };
+  const { error } = await sb.from('settings').update({ value: cfg }).eq('key', 'cosmo');
+  const statusEl = document.getElementById('cosmo-save-status');
+  if (error) { statusEl.style.color = 'var(--danger)'; statusEl.textContent = 'Алдаа: ' + error.message; return; }
+  statusEl.style.color = 'var(--success)';
+  statusEl.textContent = 'Хадгаллаа ✓';
+  setTimeout(() => { statusEl.textContent = ''; }, 2500);
+}
+
 </script>
 <script src="db.js"></script>
 <script src="buildings.js"></script>
