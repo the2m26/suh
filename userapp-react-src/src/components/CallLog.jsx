@@ -106,7 +106,6 @@ export default function CallLog({ profile }) {
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [error, setError] = useState('');
   const [staffTyping, setStaffTyping] = useState(false);
   const typingGateRef = useRef(0);
@@ -114,7 +113,6 @@ export default function CallLog({ profile }) {
   const msgBoxRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
   const bounds = useFixedBounds();
 
   // ⚠️ 2026-08-04: textarea-г бичсэн текстийн дагуу динамикаар дээшээ сунадаг болгов
@@ -308,7 +306,7 @@ export default function CallLog({ profile }) {
               ДОТОР баруун талд, тунгалаг фонтой, текст бичиж эхлэнгүүт (content
               хоосон бус болмогц) алга болно. */}
           {!content && (
-            <button onClick={() => setAttachMenuOpen(true)} disabled={uploading} aria-label="Зураг хавсаргах"
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploading} aria-label="Зураг хавсаргах"
               style={{
                 position: 'absolute', right: 10, bottom: 10, background: 'transparent', border: 'none', padding: 0,
                 cursor: uploading ? 'default' : 'pointer', color: 'var(--text-secondary)', display: 'flex', opacity: uploading ? 0.5 : 1,
@@ -334,23 +332,11 @@ export default function CallLog({ profile }) {
       {uploading && <div style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '4px 4px 0' }}>Зураг илгээж байна...</div>}
       {error && <div className="login-error">{error}</div>}
 
-      {/* ⚠️ 2026-08-05 нэмэв: userapp Profile-ийн background зураг сонгох popup-той
-          ижил дизайн (.modal-overlay/.qpay-modal, аль хэдийн байгаа CSS ашиглав) —
-          зөвхөн 2 сонголт (Photo Library, Take Photo), "Choose File" ЗОРИУДААР үгүй. */}
-      {attachMenuOpen && (
-        <div className="modal-overlay open" onClick={e => e.target === e.currentTarget && setAttachMenuOpen(false)}>
-          <div className="qpay-modal" style={{ textAlign: 'left', padding: '8px 20px' }}>
-            <div className="add-tile-row" onClick={() => { setAttachMenuOpen(false); fileInputRef.current?.click(); }}>
-              <span>Photo Library</span>
-            </div>
-            <div className="add-tile-row" onClick={() => { setAttachMenuOpen(false); cameraInputRef.current?.click(); }}>
-              <span>Take Photo</span>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ⚠️ 2026-08-05 засав: custom popup (Photo Library/Take Photo сонголт) бүрэн
+          арилгав — browser-ийн НАТИВ file picker өөрөө мөн адил сонголтуудыг
+          өгдөг тул 2 давхар (redundant) поп-ап үүсгэж байсныг олж, userapp
+          Profile-той адил ГАНЦ шууд native input болгож хялбарчлав. */}
       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileSelected} />
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFileSelected} />
     </div>
   );
 }

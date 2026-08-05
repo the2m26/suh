@@ -1580,21 +1580,8 @@
       </div>
     </div>
 
-    <!-- ⚠️ 2026-08-05 нэмэв: CC center-ийн зурган attachment сонголт (userapp
-         Profile-ийн background зураг сонгох popup-той адил зарчим — зөвхөн
-         2 сонголт, "Choose File" ЗОРИУДААР үгүй). -->
-    <div class="modal-overlay" id="modal-cc-attach">
-      <div class="modal" style="max-width:320px">
-        <div class="modal-header">
-          <div class="modal-title">Зураг сонгох</div>
-          <button class="modal-close" onclick="closeModal('modal-cc-attach')">×</button>
-        </div>
-        <div class="modal-body" style="padding:8px 20px 16px">
-          <div onclick="_ccPickFromLibrary()" style="padding:12px 4px;border-bottom:1px solid var(--border-card);cursor:pointer;font-size:13.5px">Photo Library</div>
-          <div onclick="_ccPickFromCamera()" style="padding:12px 4px;cursor:pointer;font-size:13.5px">Take Photo</div>
-        </div>
-      </div>
-    </div>
+    <!-- ⚠️ 2026-08-05 засав: энэ custom modal-ыг арилгав (redundant 2 давхар
+         поп-ап үүсгэдэг байсан — доор тайлбар: cccenter.js-ийн _ccPickFile()). -->
 
     <!-- CC CENTER (2026-07-30 — chat/messenger маягийн загвараас ЖИНХЭНЭ болсон.
          Хуучин "CC center" одоо "Зар, мэдэгдэл илгээх" нэртэй, "Ирсэн" таб нь

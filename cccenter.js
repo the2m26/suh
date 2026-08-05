@@ -332,13 +332,16 @@ function renderCCThreadView(apt, resident) {
     // түүнийг бичих кодыг нэмэх шаардлагатай.
     const readReceipt = isOut ? `<span style="margin-left:4px;color:${m.readAt ? 'var(--accent)' : 'var(--text-muted)'}">${m.readAt ? '✓✓' : '✓'}</span>` : '';
     const editDelete = isOut && m.id ? `<span style="margin-left:8px;cursor:pointer" onclick="_ccEditMessage(${m.id})">Edit</span><span style="margin-left:6px;cursor:pointer;color:var(--danger)" onclick="_ccDeleteMessage(${m.id},'${apt}')">Delete</span>` : '';
-    // ⚠️ 2026-08-05 нэмэв: attachment (зураг) байвал bubble дотор харуулна,
-    // текстгүй (зөвхөн зураг) мсж бол текстийн мөр огт гарахгүй.
-    const attachmentImg = m.attachmentUrl ? `<img src="${m.attachmentUrl}" alt="Хавсаргасан зураг" style="max-width:100%;border-radius:8px;display:block;${m.text ? 'margin-bottom:6px' : ''}">` : '';
+    // ⚠️ 2026-08-05 засав: bubble (background/padding/border-radius) бүрэн
+    // арилгав — userapp/CallLog.jsx-тэй ижил зарчим (зөвхөн текст+эгнүүлэлт).
+    // Үүнийг сая нэмсэн зурган attachment-ыг "зузаан хүрээтэй хачин эффект"-гүйгээр
+    // харуулах шаардлагаас үүдэлтэйгээр хийв.
+    const attachmentImg = m.attachmentUrl ? `<img src="${m.attachmentUrl}" alt="Хавсаргасан зураг" style="max-width:100%;border-radius:8px;display:block;${m.text ? 'margin-bottom:4px' : ''}">` : '';
     return `${dayDivider}
       <div style="display:flex;flex-direction:column;max-width:62%;align-self:${isOut ? 'flex-end' : 'flex-start'}">
-        <div style="padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;${isOut ? 'background:var(--accent-dark);color:#fff;border-top-right-radius:4px' : 'background:var(--bg-card);border:1px solid var(--border);border-top-left-radius:4px'}">${attachmentImg}${m.text ? esc(m.text) : ''}</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:4px;padding:0 4px">${timeStr}${isOut && m.sender ? ' · ' + esc(m.sender) : ''}${readReceipt}${editDelete}</div>
+        ${attachmentImg}
+        ${m.text ? `<div style="padding:0 4px;font-size:13px;line-height:1.5;color:var(--text);text-align:${isOut ? 'right' : 'left'};white-space:pre-wrap">${esc(m.text)}</div>` : ''}
+        <div style="font-size:10px;color:var(--text-muted);margin-top:2px;padding:0 4px;text-align:${isOut ? 'right' : 'left'}">${timeStr}${isOut && m.sender ? ' · ' + esc(m.sender) : ''}${readReceipt}${editDelete}</div>
       </div>`;
   }).join('');
 
@@ -411,7 +414,7 @@ function renderCCThreadView(apt, resident) {
           oninput="notifyCCTyping('${apt}');_ccAutoGrowReply()"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCCReply('${apt}');}"
           style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:6px 30px 6px 14px;color:var(--text);font-size:13px;line-height:20px;font-family:inherit;resize:none;height:34px;max-height:120px;box-sizing:border-box;overflow-y:auto">${_ccEditingId ? esc((_ccActiveMessages.find(m => m.id === _ccEditingId) || {}).text || '') : ''}</textarea>
-        <button onclick="_ccOpenAttachMenu('${apt}')" id="cc-attach-btn" style="position:absolute;right:8px;bottom:8px;background:transparent;border:none;padding:0;cursor:pointer;color:var(--text-muted);display:flex">
+        <button onclick="_ccPickFile('${apt}')" id="cc-attach-btn" style="position:absolute;right:8px;bottom:8px;background:transparent;border:none;padding:0;cursor:pointer;color:var(--text-muted);display:flex">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.8"/><path d="M21 15l-5.2-5.2a2 2 0 0 0-2.8 0L5 18"/></svg>
         </button>
       </div>
@@ -420,8 +423,7 @@ function renderCCThreadView(apt, resident) {
       </button>
     </div>
     <div id="cc-upload-status" style="display:none;padding:0 20px 6px;font-size:11px;color:var(--text-muted)">Зураг илгээж байна...</div>
-    <input id="cc-file-library" type="file" accept="image/*" style="display:none" onchange="_ccHandleFileSelected(event)">
-    <input id="cc-file-camera" type="file" accept="image/*" capture="environment" style="display:none" onchange="_ccHandleFileSelected(event)">` : ''}
+    <input id="cc-file-input" type="file" accept="image/*" style="display:none" onchange="_ccHandleFileSelected(event)">` : ''}
   `;
   const msgBox = document.getElementById('cc-messages');
   if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
@@ -550,19 +552,15 @@ async function _ccDeleteMessage(id, apt) {
   await selectCCThread(apt);
 }
 
-// ⚠️ 2026-08-05 нэмэв: зурган attachment сонголт (userapp CallLog.jsx-тэй ижил зарчим).
+// ⚠️ 2026-08-05 засав: custom modal (Photo Library/Take Photo сонголт) арилгав —
+// browser-ийн НАТИВ file picker өөрөө мөн адил сонголтуудыг (Photo Library/
+// Take Photo/Choose File) өгдөг тул 2 давхар (redundant) поп-ап үүсгэж
+// байсан. Одоо userapp Profile-ийн загвартай яг адил, шууд ганц native
+// input л дуудна.
 let _ccAttachTargetApt = null;
-function _ccOpenAttachMenu(apt) {
+function _ccPickFile(apt) {
   _ccAttachTargetApt = apt;
-  openModal('modal-cc-attach');
-}
-function _ccPickFromLibrary() {
-  closeModal('modal-cc-attach');
-  document.getElementById('cc-file-library')?.click();
-}
-function _ccPickFromCamera() {
-  closeModal('modal-cc-attach');
-  document.getElementById('cc-file-camera')?.click();
+  document.getElementById('cc-file-input')?.click();
 }
 async function _ccHandleFileSelected(event) {
   const file = event.target.files?.[0];
