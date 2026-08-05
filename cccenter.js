@@ -122,7 +122,7 @@ async function loadCCThreadList() {
   if (outErr) { console.error('notifications (cc-center) ачаалахад алдаа:', outErr.message); }
 
   _ccStatuses = {};
-  (statuses || []).forEach(s => { _ccStatuses[String(s.apt)] = { muted: s.muted, urgent: s.urgent }; });
+  (statuses || []).forEach(s => { _ccStatuses[String(s.apt)] = { muted: s.muted, urgent: s.urgent, pinned: s.pinned }; });
 
   const byApt = {};
   (feedback || []).forEach(f => {
@@ -146,7 +146,7 @@ async function loadCCThreadList() {
 }
 
 function _ccGetStatus(apt) {
-  return _ccStatuses[String(apt)] || { muted: false, urgent: false };
+  return _ccStatuses[String(apt)] || { muted: false, urgent: false, pinned: false };
 }
 
 function _ccResidentLabel(apt) {
@@ -188,18 +188,30 @@ function renderCCThreadList() {
   });
   if (!list.length) { container.innerHTML = '<div class="empty-state" style="padding:20px 14px;color:var(--text-muted);font-size:12.5px">Санал, хүсэлт алга</div>'; return; }
 
-  container.innerHTML = list.map(t => {
+  // ⚠️ 2026-08-05 нэмэв: Pin хийсэн thread-үүд жагсаалтын дээд талд, доор нь
+  // үлдсэн бүх thread хэвийн (сүүлийн мсж-ээр, аль хэдийн эрэмбэлэгдсэн) дараалалтай.
+  // Аль аль ажилтанд ижил (глобал) харагдана — cc_thread_status.pinned хуваалцсан багана.
+  const pinnedList = list.filter(t => _ccGetStatus(t.apt).pinned);
+  const unpinnedList = list.filter(t => !_ccGetStatus(t.apt).pinned);
+
+  container.innerHTML = pinnedList.map(t => _ccRenderThreadItem(t)).join('')
+    + (pinnedList.length && unpinnedList.length ? '<div style="height:2px;background:var(--accent);margin:0"></div>' : '')
+    + unpinnedList.map(t => _ccRenderThreadItem(t)).join('');
+}
+
+function _ccRenderThreadItem(t) {
     const st = _ccGetStatus(t.apt);
     // ⚠️ 2026-08-04 засав: Solved/Unsolved тэмдэглэгээ бүрмөсөн устгав (CC center
     // бол зөвхөн харилцах суваг — "шийдвэрлэлт" тэмдэглэх дамий гэж үзсэн).
     // Muted/Urgent хоёрхон төлөв үлдэв, дараах байдлаар илэрхийлнэ:
     //   Urgent → avatar-ийн дугуй хүрээ УЛААН
     //   Muted  → avatar дотор, инициаль үсгийн УРД ТАЛД диаметрийн 70% хэмжээтэй
-    //             тунгалаг фонтой саарал SVG icon (badge/overlay-г БүХ хүлээж үзсэний
-    //             дараа үүнийг сонгосон — хүрээнд хүрдэггүй, бүдгэрүүлдэггүй, тод харагдана)
+    //             тунгалаг фонтой цагаан SVG mic-mute icon (badge/overlay-г БүХ
+    //             хүлээж үзсэний дараа үүнийг сонгосон — хүрээнд хүрдэггүй,
+    //             бүдгэрүүлдэггүй, тод харагдана). 2026-08-05: анхны mic дүрсээ буцаав.
     const avatarBorder = st.urgent ? 'border:1px solid var(--danger)' : 'border:1px solid var(--border-light)';
     const muteIcon = st.muted ? `<div title="Muted" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
     </div>` : '';
     return `
     <div class="cc-thread-item" data-apt="${t.apt}" onclick="selectCCThread('${t.apt}')"
@@ -218,7 +230,6 @@ function renderCCThreadList() {
       ${t.unread > 0 ? `<span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);width:9px;height:9px;border-radius:50%;background:var(--accent)"></span>` : ''}
     </div>
   `;
-  }).join('');
 }
 
 async function selectCCThread(apt) {
@@ -277,15 +288,22 @@ function renderCCThreadView(apt, resident) {
   const residentClick = resident ? `onclick="openResidentDetail(${resident.id})" style="cursor:pointer"` : '';
   const st = _ccGetStatus(apt);
   const pillBase = 'border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:var(--text-dim)';
-  const muteBtn = `<button onclick="toggleCCStatus('${apt}','muted')" style="${pillBase}${st.muted ? ';background:var(--bg-card);color:var(--text);border-color:var(--border-light)' : ''}">${st.muted ? 'Muted' : 'Mute'}</button>`;
+  // ⚠️ 2026-08-05 засав: "Muted" идэвхтэй үедээ хүрээний өнгө текстийн (var(--text),
+  // цагаан) өнгөтэй адил болгов — өмнө нь border-light (саарал) байсныг тодотгов.
+  const muteBtn = `<button onclick="toggleCCStatus('${apt}','muted')" style="${pillBase}${st.muted ? ';background:var(--bg-card);color:var(--text);border-color:var(--text)' : ''}">${st.muted ? 'Muted' : 'Mute'}</button>`;
   const urgentBtn = `<button onclick="toggleCCStatus('${apt}','urgent')" style="${pillBase}${st.urgent ? ';background:var(--danger-bg);color:var(--danger);border-color:var(--danger)' : ''}">${st.urgent ? 'Urgent' : 'Normal'}</button>`;
+  // ⚠️ 2026-08-05 нэмэв: Pin товч — icon/emoji-гүй, зөвхөн "Pin"/"Unpin" текст.
+  // Пин хийх/арилгах эрх бүх ажилтанд адилхан (глобал багана, тусгайлсан эрх/
+  // хэрэглэгч тус бүрийн pin ЗОРИУДААР хийгээгүй — олон ажилтан ярианадаа
+  // ижил зурвасыг "хамгийн дээрх" гэж нэрлэж ойлголцоход төөрөгдөл гарахаас сэргийлэв).
+  const pinBtn = `<button onclick="toggleCCStatus('${apt}','pinned')" style="${pillBase}${st.pinned ? ';background:var(--bg-card);color:var(--text);border-color:var(--text)' : ''}">${st.pinned ? 'Unpin' : 'Pin'}</button>`;
   // ⚠️ 2026-08-04 засав: Solved/Unsolved төлөв бүрмөсөн арилгав (CC center
   // бол зөвхөн харилцах суваг, "шийдвэрлэсэн эсэх" тэмдэглэл үүрэгт нь
   // таарахгүй гэж үзсэн). Urgent-ийг avatar-ийн улаан хүрээгээр, Muted-ийг
   // avatar дотор жижиг mute icon-оор дүрсэлдэг болов.
   const avatarBorder = st.urgent ? 'border:1px solid var(--danger)' : 'border:1px solid var(--border-light)';
   const muteIcon = st.muted ? `<div title="Muted" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
   </div>` : '';
 
   view.innerHTML = `
@@ -298,7 +316,7 @@ function renderCCThreadView(apt, resident) {
         <div style="font-size:14px;font-weight:700">${esc(_ccResidentLabel(apt))}</div>
         <div style="font-size:11.5px;color:var(--text-muted)">${esc(String(apt))} тоот</div>
       </div>
-      <div style="display:flex;gap:6px;flex-shrink:0">${muteBtn}${urgentBtn}</div>
+      <div style="display:flex;gap:6px;flex-shrink:0">${pinBtn}${muteBtn}${urgentBtn}</div>
     </div>
     <div id="cc-messages" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px">${bubbles || '<div class="empty-state" style="color:var(--text-muted)">Зурвас алга</div>'}</div>
     <div id="cc-typing-indicator" style="display:none;padding:2px 20px;font-size:11px;color:var(--text-muted);font-style:italic"></div>
@@ -309,27 +327,33 @@ function renderCCThreadView(apt, resident) {
          textarea-д ID-ийн өндөр specificity-ээр дарж, цэнхэр хүрээг арилгав. */
       #cc-reply-text:focus { outline: none; box-shadow: none; border-color: var(--border); }
     </style>
-    <div style="border-top:1px solid var(--border);padding:14px 20px;background:var(--bg-surface);display:flex;gap:10px;align-items:flex-end">
+    <div style="border-top:1px solid var(--border);padding:10px 20px;background:var(--bg-surface);display:flex;gap:10px;align-items:flex-end">
       <textarea id="cc-reply-text" placeholder="Хариу бичих..." rows="1"
         oninput="notifyCCTyping('${apt}');_ccAutoGrowReply()"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCCReply('${apt}');}"
-        style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:8px 14px;color:var(--text);font-size:13px;font-family:inherit;resize:none;height:36px;max-height:120px;box-sizing:border-box;overflow-y:auto"></textarea>
-      <button aria-label="Илгээх" onclick="sendCCReply('${apt}')" style="width:36px;height:36px;flex-shrink:0;border-radius:50%;border:none;outline:none;background:var(--accent);box-shadow:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.4 20.6L21.2 12.6C21.9 12.3 21.9 11.7 21.2 11.4L3.4 3.4C2.7 3.1 2.3 3.5 2.5 4.2L4.9 11.1C5 11.4 5.3 11.7 5.6 11.7L14.5 12L5.6 12.3C5.3 12.3 5 12.6 4.9 12.9L2.5 19.8C2.3 20.5 2.7 20.9 3.4 20.6Z" fill="#fff"/></svg>
+        style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:4px 14px;color:var(--text);font-size:13px;line-height:20px;font-family:inherit;resize:none;height:28px;max-height:120px;box-sizing:border-box;overflow-y:auto"></textarea>
+      <button aria-label="Илгээх" onclick="sendCCReply('${apt}')" style="width:28px;height:28px;flex-shrink:0;border-radius:50%;border:none;outline:none;background:var(--accent);box-shadow:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.4 20.6L21.2 12.6C21.9 12.3 21.9 11.7 21.2 11.4L3.4 3.4C2.7 3.1 2.3 3.5 2.5 4.2L4.9 11.1C5 11.4 5.3 11.7 5.6 11.7L14.5 12L5.6 12.3C5.3 12.3 5 12.6 4.9 12.9L2.5 19.8C2.3 20.5 2.7 20.9 3.4 20.6Z" fill="#fff"/></svg>
       </button>
     </div>` : ''}
   `;
   const msgBox = document.getElementById('cc-messages');
   if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
+  // ⚠️ 2026-08-05 нэмэв: render болмогц JS-ээр бодит scrollHeight-аар нь
+  // өндрийг тооцоолуулна — inline height:28px тооцоолсноос илүү нарийвчлалтай,
+  // хуучин утга "үлдэх" зөрчлөөс сэргийлнэ.
+  _ccAutoGrowReply();
 }
 
-// ⚠️ 2026-08-05 нэмэв: userapp-ийн CallLog.jsx-тэй ижил автомат өндөр сунгах логик —
-// 36px (нэг мөр)-ээс эхэлж, бичсэн текстийн дагуу 120px хүртэл өсөж, түүнээс цааш дотроо scroll.
+// ⚠️ 2026-08-05 засав: userapp-ийн CallLog.jsx-тэй ижил автомат өндөр сунгах логик —
+// 28px (яг нэг мөр текстийн өндөр)-ээс эхэлж, бичсэн текстийн дагуу 120px хүртэл
+// өсөж, түүнээс цааш дотроо scroll. renderCCThreadView()-ийн эцэст ч дуудагдаж,
+// хуучин утга "үлдэх" зөрчлөөс сэргийлнэ.
 function _ccAutoGrowReply() {
   const el = document.getElementById('cc-reply-text');
   if (!el) return;
   el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  el.style.height = Math.max(28, Math.min(el.scrollHeight, 120)) + 'px';
 }
 
 async function sendCCReply(apt) {
@@ -379,11 +403,11 @@ async function updateCCBadge() {
 
 async function toggleCCStatus(apt, field) {
   const current = _ccGetStatus(apt);
-  const next = { muted: current.muted, solved: current.solved, urgent: current.urgent };
+  const next = { muted: current.muted, solved: current.solved, urgent: current.urgent, pinned: current.pinned };
   next[field] = !next[field];
 
   const { error } = await sb.from('cc_thread_status').upsert(
-    { apt, muted: next.muted, solved: next.solved, urgent: next.urgent, updated_at: new Date().toISOString() },
+    { apt, muted: next.muted, solved: next.solved, urgent: next.urgent, pinned: next.pinned, updated_at: new Date().toISOString() },
     { onConflict: 'apt' }
   );
   if (error) { toast('Тэмдэглэхэд алдаа гарлаа', 'error'); return; }
@@ -395,4 +419,3 @@ async function toggleCCStatus(apt, field) {
     renderCCThreadView(apt, resident);
   }
 }
-
