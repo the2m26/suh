@@ -211,7 +211,7 @@ function _ccRenderThreadItem(t) {
     //             бүдгэрүүлдэггүй, тод харагдана). 2026-08-05: анхны mic дүрсээ буцаав.
     const avatarBorder = st.urgent ? 'border:1px solid var(--danger)' : 'border:1px solid var(--border-light)';
     const muteIcon = st.muted ? `<div title="Muted" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
     </div>` : '';
     return `
     <div class="cc-thread-item" data-apt="${t.apt}" onclick="selectCCThread('${t.apt}')"
@@ -246,8 +246,8 @@ async function selectCCThread(apt) {
   ]);
 
   _ccActiveMessages = [
-    ...(incoming || []).map(m => ({ dir: 'in', text: m.content, at: m.created_at })),
-    ...(outgoing || []).map(m => ({ dir: 'out', text: m.content, at: m.sent_at, sender: m.sender_name })),
+    ...(incoming || []).map(m => ({ dir: 'in', text: m.content, at: m.created_at, id: m.id })),
+    ...(outgoing || []).map(m => ({ dir: 'out', text: m.content, at: m.sent_at, sender: m.sender_name, id: m.id, readAt: m.read_at })),
   ].sort((a, b) => new Date(a.at) - new Date(b.at));
 
   // Нээж үзсэн бүх "шинэ" feedback-ийг "хянасан" болгоно
@@ -278,14 +278,28 @@ function renderCCThreadView(apt, resident) {
     // ⚠️ 2026-07-30: илгээсэн (out) bubble-ийн дэвсгэрийг --accent-dark болгов —
     // --accent (ижил өнгө) нь "Илгээх" товчны өнгөтэй яг давхцаж байсныг
     // ялгаатай болгох хүсэлтээр.
+    // ⚠️ 2026-08-05 нэмэв: Read receipt (✓ илгээсэн / ✓✓ уншсан) болон өөрийн
+    // (out) илгээсэн мсж-д Edit/Delete жижиг текст товч. ⚠️ readAt зөвхөн
+    // резидент талын (userapp/CallLog.jsx) кодоор бичигдэх ёстой — энэ удаад
+    // зөвхөн АДМИН талыг бэлдсэн тул, резидент тал холбогдох хүртэл ✓✓
+    // ХЭЗЭЭ Ч гарахгүй (readAt үргэлж null үлдэнэ) — дараагийн алхамд CallLog.jsx-д
+    // түүнийг бичих кодыг нэмэх шаардлагатай.
+    const readReceipt = isOut ? `<span style="margin-left:4px;color:${m.readAt ? 'var(--accent)' : 'var(--text-muted)'}">${m.readAt ? '✓✓' : '✓'}</span>` : '';
+    const editDelete = isOut && m.id ? `<span style="margin-left:8px;cursor:pointer;text-decoration:underline" onclick="_ccEditMessage(${m.id})">Edit</span><span style="margin-left:6px;cursor:pointer;text-decoration:underline;color:var(--danger)" onclick="_ccDeleteMessage(${m.id},'${apt}')">Delete</span>` : '';
     return `${dayDivider}
       <div style="display:flex;flex-direction:column;max-width:62%;align-self:${isOut ? 'flex-end' : 'flex-start'}">
         <div style="padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;${isOut ? 'background:var(--accent-dark);color:#fff;border-top-right-radius:4px' : 'background:var(--bg-card);border:1px solid var(--border);border-top-left-radius:4px'}">${esc(m.text || '')}</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:4px;padding:0 4px">${timeStr}${isOut && m.sender ? ' · ' + esc(m.sender) : ''}</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:4px;padding:0 4px">${timeStr}${isOut && m.sender ? ' · ' + esc(m.sender) : ''}${readReceipt}${editDelete}</div>
       </div>`;
   }).join('');
 
-  const residentClick = resident ? `onclick="openResidentDetail(${resident.id})" style="cursor:pointer"` : '';
+  // ⚠️ 2026-08-05 засав: residentClick доторх "style=cursor:pointer" болон гадна
+  // талын "style=flex:1;min-width:0" ХОЁУЛАА ижил div дээр давхарлагдаж (HTML
+  // duplicate attribute) байсан тул browser эхний style-ыг л хүлээн авч, flex:1
+  // үл ажилладаг байв — үүнээс болж товчнуудын байрлал нэрний уртаас хамааран
+  // "хөдөлдөг" харагдаж байсан. Нэг style attribute-д нэгтгэв.
+  const residentOnclick = resident ? `onclick="openResidentDetail(${resident.id})"` : '';
+  const residentCursor = resident ? 'cursor:pointer;' : '';
   const st = _ccGetStatus(apt);
   const pillBase = 'border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:var(--text-dim)';
   // ⚠️ 2026-08-05 засав: "Muted" идэвхтэй үедээ хүрээний өнгө текстийн (var(--text),
@@ -303,7 +317,7 @@ function renderCCThreadView(apt, resident) {
   // avatar дотор жижиг mute icon-оор дүрсэлдэг болов.
   const avatarBorder = st.urgent ? 'border:1px solid var(--danger)' : 'border:1px solid var(--border-light)';
   const muteIcon = st.muted ? `<div title="Muted" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
   </div>` : '';
 
   view.innerHTML = `
@@ -312,7 +326,7 @@ function renderCCThreadView(apt, resident) {
         <div style="width:34px;height:34px;border-radius:50%;background:var(--bg-card);${avatarBorder};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent)">${esc(_ccInitials(apt))}</div>
         ${muteIcon}
       </div>
-      <div ${residentClick} style="flex:1;min-width:0">
+      <div ${residentOnclick} style="${residentCursor}flex:1;min-width:0">
         <div style="font-size:14px;font-weight:700">${esc(_ccResidentLabel(apt))}</div>
         <div style="font-size:11.5px;color:var(--text-muted)">${esc(String(apt))} тоот</div>
       </div>
@@ -324,7 +338,12 @@ function renderCCThreadView(apt, resident) {
     <style>
       /* ⚠️ 2026-08-05 нэмэв: userapp-ийн CallLog.jsx-тэй ижил засвар — глобал
          "input:focus,textarea:focus{box-shadow:...}" дүрмийг зөвхөн энэ
-         textarea-д ID-ийн өндөр specificity-ээр дарж, цэнхэр хүрээг арилгав. */
+         textarea-д ID-ийн өндөр specificity-ээр дарж, цэнхэр хүрээг арилгав.
+         ⚠️ 2026-08-05 нэмэв (2): suh.html-ийн глобал "textarea{min-height:80px}"
+         дүрэм inline height:28px-ийг "дарж" байсан ҮНДСЭН ШАЛТГААН нь энэ байсан —
+         min-height ба height ХОЁР ӨӨР property тул inline "height" min-height-ийг
+         дарж чадахгүй. ID-ийн давуу эрхээр min-height-ийг ч мөн дарав. */
+      #cc-reply-text { min-height: 28px; }
       #cc-reply-text:focus { outline: none; box-shadow: none; border-color: var(--border); }
     </style>
     <div style="border-top:1px solid var(--border);padding:10px 20px;background:var(--bg-surface);display:flex;gap:10px;align-items:flex-end">
@@ -332,8 +351,8 @@ function renderCCThreadView(apt, resident) {
         oninput="notifyCCTyping('${apt}');_ccAutoGrowReply()"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCCReply('${apt}');}"
         style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:4px 14px;color:var(--text);font-size:13px;line-height:20px;font-family:inherit;resize:none;height:28px;max-height:120px;box-sizing:border-box;overflow-y:auto"></textarea>
-      <button aria-label="Илгээх" onclick="sendCCReply('${apt}')" style="width:28px;height:28px;flex-shrink:0;border-radius:50%;border:none;outline:none;background:var(--accent);box-shadow:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.4 20.6L21.2 12.6C21.9 12.3 21.9 11.7 21.2 11.4L3.4 3.4C2.7 3.1 2.3 3.5 2.5 4.2L4.9 11.1C5 11.4 5.3 11.7 5.6 11.7L14.5 12L5.6 12.3C5.3 12.3 5 12.6 4.9 12.9L2.5 19.8C2.3 20.5 2.7 20.9 3.4 20.6Z" fill="#fff"/></svg>
+      <button aria-label="Илгээх" onclick="sendCCReply('${apt}')" style="width:34px;height:34px;flex-shrink:0;border-radius:50%;border:none;outline:none;background:var(--accent);box-shadow:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.4 20.6L21.2 12.6C21.9 12.3 21.9 11.7 21.2 11.4L3.4 3.4C2.7 3.1 2.3 3.5 2.5 4.2L4.9 11.1C5 11.4 5.3 11.7 5.6 11.7L14.5 12L5.6 12.3C5.3 12.3 5 12.6 4.9 12.9L2.5 19.8C2.3 20.5 2.7 20.9 3.4 20.6Z" fill="#fff"/></svg>
       </button>
     </div>` : ''}
   `;
@@ -418,4 +437,25 @@ async function toggleCCStatus(apt, field) {
     const resident = residents.find(x => String(x.apt) === String(apt));
     renderCCThreadView(apt, resident);
   }
+}
+
+// ⚠️ 2026-08-05 нэмэв: өөрийн (admin/ажилтны) илгээсэн зурвасыг засах/устгах.
+// Зөвхөн ЭНЭ ажилтны бус, notifications хүснэгэлд бүртгэлтэй БАРУУН (out)
+// зурвасд л харагдана (resident-ийн feedback_requests-д Edit/Delete гарахгүй).
+async function _ccEditMessage(id) {
+  const msg = _ccActiveMessages.find(m => m.id === id && m.dir === 'out');
+  if (!msg) return;
+  const newText = prompt('Зурвасаа засах:', msg.text);
+  if (newText === null || newText.trim() === '' || newText === msg.text) return;
+  const { error } = await sb.from('notifications').update({ content: newText.trim() }).eq('id', id);
+  if (error) { toast('Засварлахад алдаа гарлаа', 'error'); return; }
+  await selectCCThread(_ccActiveApt);
+}
+
+async function _ccDeleteMessage(id, apt) {
+  if (!confirm('Энэ зурвасыг устгах уу?')) return;
+  const { error } = await sb.from('notifications').delete().eq('id', id);
+  if (error) { toast('Устгахад алдаа гарлаа', 'error'); return; }
+  await loadCCThreadList();
+  await selectCCThread(apt);
 }
