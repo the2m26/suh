@@ -51,3 +51,27 @@ export function buildFeeBreakdown(entity, entityType, feeCatalog, ctx) {
   const total = rows.reduce((s, x) => s + x.amt, 0);
   return { rows, total };
 }
+
+// ⚠️ 2026-08-05 нэмэв: suh.html-ийн _getUnpaidMonths()-той ЯГ ИЖИЛ логик —
+// резидент "хамгийн эртний" төлөгдөөгүй сараас эхлэн, дараалан ("хөөж")
+// төлдөг тул, userapp-ийн Payment.jsx-д ч мөн бүх төлөгдөөгүй сарыг
+// (одоогийн сар хүртэл) тодорхойлно.
+export function getUnpaidMonths(apt, ownDate, transactions, month, year) {
+  const paidMonths = new Set(
+    (transactions || []).filter(t => t && t.type === 'income' && t.category === 'resident' &&
+      String(t.apt) === String(apt) && t.year === year
+    ).map(t => t.month)
+  );
+  let startMonth = 1;
+  const sd = ownDate ? new Date(ownDate) : null;
+  if (sd && !isNaN(sd)) {
+    const sy = sd.getFullYear(), sm = sd.getMonth() + 1;
+    if (sy === year) startMonth = sm;
+    else if (sy > year) startMonth = month + 1;
+  }
+  let consecutivePaid = startMonth - 1;
+  for (let m = startMonth; m <= month; m++) { if (paidMonths.has(m)) consecutivePaid = m; else break; }
+  const missing = [];
+  for (let m = consecutivePaid + 1; m <= month; m++) missing.push(m);
+  return missing;
+}

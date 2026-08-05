@@ -57,7 +57,7 @@ function _mapTransactionRow(t) {
 }
 
 // ⚠️ 2026-07-30 нэмэв: Банкны API/өөр ажилтнаас шинэ гүйлгээ орж ирэхэд
-// (жиш нь QPay/банкны webhook) Тθлбθр тθлθлт хуудсыг АВТОМАТААР шинэчилж,
+// (жиш нь QPay/банкны webhook) Төлбөр төлөлт хуудсыг АВТОМАТААР шинэчилж,
 // хуучирсан өгөгдөл дээр үндэслэн 2 ажилтан зэрэг үйлдэл хийж зөрчил
 // үүсгэхээс сэргийлнэ. Зөвхөн НЭГ УДАА subscribe хийгдэнэ (db_init()-ээс
 // дуудагдана, аль ч хуудсан дээр байгаа үед ч badge-үүд шинэчлэгдэнэ).
@@ -190,7 +190,13 @@ function calcEntityFee(entity, entityType) {
 // үүнийг тооцдог байсан тул 2 газар ХАРИЛЦАН ЗӨРЖ байсан. Одоо бүтэн resident
 // object авч, ЯГ НЭГ л эх сурвалжаас (feeCatalog) тооцно — бүх дуудагч газар
 // (calcFee(r)) ижил, зөв тоо авна.
+// ⚠️ 2026-08-05 нэмэв: Cosmo-ийн виртуал резидент мөр (apt=0, бодит сууц биш)
+// үүнд ХАМГААЛАЛТТАЙ болов — үүнгүйгээр 'flat'/'main_count' төрлийн fee-үүд
+// area-аас үл хамааран Cosmo-д ч төлбөр тооцож, нийт орлогын тооцооллыг
+// (resBilled, cumulativeBilled г.м, бүгд эндээс дамждаг тул) буруу өсгөж
+// болзошгүй байсан.
 function calcFee(r) {
+  if (r && r.apt === 0) return 0;
   return calcEntityFee(r, 'resident');
 }
 // ============================================================
@@ -928,51 +934,56 @@ function onPayBuildingChange() {
     aptSel.innerHTML='<option value="">Бүртгэлтэй өмчлөгч байхгүй</option>';aptSel.disabled=true;
   }
 }
+// ⚠️ 2026-08-05 засав: ӨМНӨ зөвхөн ОДООГИЙН сарын задаргааг харуулж, өмнөх
+// төлөгдөөгүй сарууд (хуримтлагдсан өр) огт тооцоогүй байсан — резидент/ААН
+// "хөөж" (сонгохгүй, эртнээс дараалан) төлдөг ёстой тул, _getUnpaidMonths()-оор
+// БҮХ төлөгдөөгүй сарыг тус бүр мөрөөр, нийт нийлбэр дүнтэйгээр харуулна.
+function _renderPayBreakdown(entity, entityType, label) {
+  const feeRows = feeCatalog.filter(f => f.active && f.applies_to===entityType)
+    .map(f => ({ name: f.name, amt: Math.round(_feeQuantity(entity, entityType, f.unit_type) * (+f.rate||0)) }));
+  const monthlyTotal = feeRows.reduce((s,x)=>s+x.amt, 0);
+  const startField = entityType === 'resident' ? 'ownDate' : 'start';
+  const missingMonths = _getUnpaidMonths(entity, entityType, startField);
+  const bd=document.getElementById('pay-fee-breakdown');
+  bd.style.display='block';
+
+  if (!missingMonths.length) {
+    bd.innerHTML = `<div style="font-size:12px;font-weight:700;color:var(--success)">✓ ${esc(label)} — ${CUR_MONTH}-р сар хүртэлх бүх төлбөр төлөгдсөн байна</div>`;
+    document.getElementById('pay-amount').value = 0;
+    return { missingMonths: [], total: 0 };
+  }
+
+  const prevMonths = missingMonths.slice(0, -1); // одоогийн сараас бусад, эрт нь дараалсан
+  const total = monthlyTotal * missingMonths.length;
+  bd.innerHTML = `
+    ${prevMonths.length ? `<div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:8px">⚠️ Өмнөх төлөгдөөгүй сарууд</div>
+    ${prevMonths.map(m=>`<div class="summary-row"><span class="summary-key">${m}-р сарын хураамж</span><span class="summary-val font-mono">${fmt(monthlyTotal)}</span></div>`).join('')}
+    <div style="height:1px;background:var(--border);margin:8px 0"></div>` : ''}
+    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">📋 ${esc(label)} — ${CUR_MONTH}-р сарын задаргаа</div>
+    ${feeRows.filter(x=>x.amt).map(x=>`<div class="summary-row"><span class="summary-key">${esc(x.name)}</span><span class="summary-val font-mono">${fmt(x.amt)}</span></div>`).join('')}
+    <div class="summary-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px">
+      <span class="summary-key" style="font-weight:700;color:var(--text)">Нийт төлөх дүн (${missingMonths.length} сар)</span>
+      <span class="summary-val text-accent" style="font-size:16px">${fmt(total)}</span></div>`;
+  document.getElementById('pay-amount').value = total;
+  return { missingMonths, total };
+}
 function onPayAptChange() {
   const val=document.getElementById('pay-apt-select').value;
   if(!val){document.getElementById('pay-fee-breakdown').style.display='none';document.getElementById('pay-overdue-warning').style.display='none';return;}
+  document.getElementById('pay-overdue-warning').style.display='none';
 
   if(String(val).startsWith('biz:')) {
     const bizId=+val.slice(4);
     const b=businesses.find(x=>x.id===bizId);if(!b)return;
-    const feeRows = feeCatalog.filter(f => f.active && f.applies_to==='business')
-      .map(f => ({ name: f.name, amt: Math.round(_feeQuantity(b, 'business', f.unit_type) * (+f.rate||0)) }));
-    const total = feeRows.reduce((s,x)=>s+x.amt, 0);
-    const bd=document.getElementById('pay-fee-breakdown');
-    bd.style.display='block';
-    bd.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">📋 ${esc(b.name)} — СӨХ-ийн төлбөрийн задаргаа</div>
-      ${feeRows.filter(x=>x.amt).map(x=>`<div class="summary-row"><span class="summary-key">${esc(x.name)}</span><span class="summary-val font-mono">${fmt(x.amt)}</span></div>`).join('')}
-      <div class="summary-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px">
-        <span class="summary-key" style="font-weight:700;color:var(--text)">Нийт дүн</span>
-        <span class="summary-val text-accent" style="font-size:16px">${fmt(total)}</span></div>`;
-    document.getElementById('pay-amount').value=total;
+    _renderPayBreakdown(b, 'business', b.name);
     document.getElementById('qpay-apt-hint').textContent=b.name;
-    const hasPrev=transactions.some(t=>t.type==='income'&&t.category==='business'&&t.bizId===bizId&&t.month===CUR_MONTH);
-    const ow=document.getElementById('pay-overdue-warning');
-    if(hasPrev){ow.style.display='block';ow.innerHTML=`⚠️ ${esc(b.name)} энэ сарын СӨХ-ийн төлбөрийг аль хэдийн төлсөн байна!`;}
-    else{ow.style.display='none';}
     return;
   }
 
   const resId=+val;
   const r=residents.find(x=>x.id===resId);if(!r)return;
-  const feeRowsR = feeCatalog.filter(f => f.active && f.applies_to==='resident')
-    .map(f => ({ name: f.name, amt: Math.round(_feeQuantity(r, 'resident', f.unit_type) * (+f.rate||0)) }));
-  const total = feeRowsR.reduce((s,x)=>s+x.amt, 0);
-  const aptCode=String(r.apt);
-  const bd=document.getElementById('pay-fee-breakdown');
-  bd.style.display='block';
-  bd.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">📋 ${aptCode} — СӨХ-ийн төлбөрийн задаргаа</div>
-    ${feeRowsR.filter(x=>x.amt).map(x=>`<div class="summary-row"><span class="summary-key">${esc(x.name)}</span><span class="summary-val font-mono">${fmt(x.amt)}</span></div>`).join('')}
-    <div class="summary-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px">
-      <span class="summary-key" style="font-weight:700;color:var(--text)">Нийт дүн</span>
-      <span class="summary-val text-accent" style="font-size:16px">${fmt(total)}</span></div>`;
-  document.getElementById('pay-amount').value=total;
-  document.getElementById('qpay-apt-hint').textContent=aptCode;
-  const hasPrev=transactions.some(t=>String(t.apt)===String(r.apt)&&t.type==='income'&&t.category==='resident'&&t.month===CUR_MONTH);
-  const ow=document.getElementById('pay-overdue-warning');
-  if(hasPrev){ow.style.display='block';ow.innerHTML='⚠️ Энэ айл 1-р сарын СӨХ-ийн төлбөрийг аль хэдийн төлсөн байна!';}
-  else{ow.style.display='none';}
+  _renderPayBreakdown(r, 'resident', String(r.apt));
+  document.getElementById('qpay-apt-hint').textContent=String(r.apt);
 }
 function quickPayForApt(resId) {
   const r=residents.find(x=>x.id===resId);if(!r)return;
@@ -993,6 +1004,29 @@ function selectPayMethod(el,method){
   document.getElementById('pay-method').value=method;
   document.getElementById('qpay-info').style.display=method==='qpay'?'block':'none';
 }
+// ⚠️ 2026-08-05 нэмэв: Резидент/ААН аль сараа төлөхөө ӨӨРӨӨ СОНГОДОГГүй —
+// ЭРТНИЙ (хамгийн эхний) төлөгдөөгүй сараас эхлэн, дараалан "хөөж" төлдөг
+// зарчмаар, оруулсан НИЙТ дүнг тохирох тооны сард хуваарилж, сар БүРД ТУСДАА
+// transaction мөр + НББ journal entry (ном журмаар зөв, cash-basis боловч
+// АЛЬ сарын хураамж болохыг тодорхой хадгална) үүсгэнэ.
+function _allocatePaymentToMonths(entity, entityType, amount) {
+  const feeRows = feeCatalog.filter(f => f.active && f.applies_to===entityType)
+    .map(f => Math.round(_feeQuantity(entity, entityType, f.unit_type) * (+f.rate||0)));
+  const monthlyTotal = feeRows.reduce((s,x)=>s+x, 0);
+  const startField = entityType === 'resident' ? 'ownDate' : 'start';
+  const missingMonths = _getUnpaidMonths(entity, entityType, startField);
+  if (!missingMonths.length) return [];
+  let monthsToApply = monthlyTotal > 0 ? Math.round(amount / monthlyTotal) : 1;
+  monthsToApply = Math.max(1, Math.min(monthsToApply, missingMonths.length));
+  const monthsCovered = missingMonths.slice(0, monthsToApply);
+  let remaining = amount;
+  return monthsCovered.map((m, idx) => {
+    const isLast = idx === monthsCovered.length - 1;
+    const share = isLast ? remaining : Math.min(monthlyTotal, remaining);
+    remaining -= share;
+    return { month: m, amount: share };
+  });
+}
 async function savePayment() {
   // Quick pay горимд pay-apt-select нуугдсан тул selectedAptForDetail ашиглана
   const selectEl = document.getElementById('pay-apt-select');
@@ -1008,27 +1042,30 @@ async function savePayment() {
     const amount=+document.getElementById('pay-amount').value;
     const method=document.getElementById('pay-method').value;
     const ref=document.getElementById('pay-ref').value;
-    const month=+document.getElementById('pay-month').value;
     if(!amount){toast('Дүн оруулна уу','error');return;}
-    const data={
-      apt:null, type:'income', amount, method, ref,
-      month, year:CUR_YEAR, date:todayStr(), status:'completed',
-      category:'business', businessId:b.id,
-      description: b.name+' — '+month+'-р сарын СӨХ-ийн төлбөр', subcat:'Сарын төлбөр',
-    };
-    const ok = await db_saveTransaction(data);
-    if(!ok) { toast('Бүртгэхэд алдаа гарлаа — таны рольд энэ үйлдэл хийх эрх байхгүй байж болзошгүй','error'); return; }
-    transactions.push({id:nextId++,dbId:data.id,...data});
-    if (typeof accountingRecordBusinessPayment === 'function') {
-      accountingRecordBusinessPayment(b.id, amount, todayStr(), `${b.name} — ${month}-р сарын түрээс`)
-        .then(res => { if (!res.success) console.warn('Journal entry үүсгэхэд алдаа:', res.error); })
-        .catch(e => console.warn('Journal entry үүсгэхэд алдаа:', e));
+    const allocations = _allocatePaymentToMonths(b, 'business', amount);
+    if(!allocations.length){toast('Төлөх өр байхгүй байна','error');return;}
+    for (const a of allocations) {
+      const data={
+        apt:null, type:'income', amount:a.amount, method, ref,
+        month:a.month, year:CUR_YEAR, date:todayStr(), status:'completed',
+        category:'business', businessId:b.id,
+        description: b.name+' — '+a.month+'-р сарын СӨХ-ийн төлбөр', subcat:'Сарын төлбөр',
+      };
+      const ok = await db_saveTransaction(data);
+      if(!ok) { toast('Бүртгэхэд алдаа гарлаа — таны рольд энэ үйлдэл хийх эрх байхгүй байж болзошгүй','error'); return; }
+      transactions.push({id:nextId++,dbId:data.id,...data});
+      if (typeof accountingRecordBusinessPayment === 'function') {
+        accountingRecordBusinessPayment(b.id, a.amount, todayStr(), `${b.name} — ${a.month}-р сарын түрээс`, String(a.month))
+          .then(res => { if (!res.success) console.warn('Journal entry үүсгэхэд алдаа:', res.error); })
+          .catch(e => console.warn('Journal entry үүсгэхэд алдаа:', e));
+      }
     }
-    logActivity('payment', 'transactions', b.id, `${b.name} — ${fmtMoney(amount)}`);
+    logActivity('payment', 'transactions', b.id, `${b.name} — ${fmtMoney(amount)} (${allocations.length} сар)`);
     closeModal('modal-payment');
     renderBusinesses();
     renderPaymentsTable('completed');
-    toast(`${b.name} ${month}-р сарын төлбөр бүртгэгдлээ ✓`,'success');
+    toast(`${b.name} — ${allocations.length} сарын төлбөр бүртгэгдлээ ✓`,'success');
     return;
   }
 
@@ -1039,32 +1076,35 @@ async function savePayment() {
   const amount=+document.getElementById('pay-amount').value;
   const method=document.getElementById('pay-method').value;
   const ref=document.getElementById('pay-ref').value;
-  const month=+document.getElementById('pay-month').value;
   if(!amount){toast('Дүн оруулна уу','error');return;}
-  const data={
-    apt:r.apt, aptId:r.id,
-    description:'СӨХ-ийн төлбөр', subcat:'Сарын төлбөр',
-    type:'income', amount, method, ref,
-    month, year:CUR_YEAR,
-    date:todayStr(), status:'completed', category:'resident'
-  };
-  const ok = await db_saveTransaction(data);
-  if(!ok) { toast('Бүртгэхэд алдаа гарлаа — таны рольд энэ үйлдэл хийх эрх байхгүй байж болзошгүй','error'); return; }
-  transactions.push({id:nextId++,dbId:data.id,...data});
-  // Нягтлан бодох бүртгэлийн журнал бичилт (нэмэлт — гол гүйлгээг зогсоохгүй)
-  if (typeof accountingRecordResidentPayment === 'function') {
-    accountingRecordResidentPayment(r.apt, amount, todayStr(), `${r.apt} тоот — ${month}-р сарын төлбөр`)
-      .then(res => { if (!res.success) console.warn('Journal entry үүсгэхэд алдаа:', res.error); })
-      .catch(e => console.warn('Journal entry үүсгэхэд алдаа:', e));
+  const allocations = _allocatePaymentToMonths(r, 'resident', amount);
+  if(!allocations.length){toast('Төлөх өр байхгүй байна','error');return;}
+  for (const a of allocations) {
+    const data={
+      apt:r.apt, aptId:r.id,
+      description:'СӨХ-ийн төлбөр', subcat:'Сарын төлбөр',
+      type:'income', amount:a.amount, method, ref,
+      month:a.month, year:CUR_YEAR,
+      date:todayStr(), status:'completed', category:'resident'
+    };
+    const ok = await db_saveTransaction(data);
+    if(!ok) { toast('Бүртгэхэд алдаа гарлаа — таны рольд энэ үйлдэл хийх эрх байхгүй байж болзошгүй','error'); return; }
+    transactions.push({id:nextId++,dbId:data.id,...data});
+    // Нягтлан бодох бүртгэлийн журнал бичилт (нэмэлт — гол гүйлгээг зогсоохгүй)
+    if (typeof accountingRecordResidentPayment === 'function') {
+      accountingRecordResidentPayment(r.apt, a.amount, todayStr(), `${r.apt} тоот — ${a.month}-р сарын төлбөр`, String(a.month))
+        .then(res => { if (!res.success) console.warn('Journal entry үүсгэхэд алдаа:', res.error); })
+        .catch(e => console.warn('Journal entry үүсгэхэд алдаа:', e));
+    }
   }
-  logActivity('payment', 'transactions', r.id, `${String(r.apt)} тоот — ${fmtMoney(amount)}`);
+  logActivity('payment', 'transactions', r.id, `${String(r.apt)} тоот — ${fmtMoney(amount)} (${allocations.length} сар)`);
   closeModal('modal-payment');
   renderResidents();
   renderPaymentsTable('completed');
   if(document.getElementById('page-apartments')?.classList.contains('active')){
     renderAptGrid(selectedBuilding);
   }
-  toast(`${String(r.apt)} ${month}-р сарын төлбөр бүртгэгдлээ ✓`,'success');
+  toast(`${String(r.apt)} — ${allocations.length} сарын төлбөр бүртгэгдлээ ✓`,'success');
 }
 function loadExpCats(type){
   const catSel=document.getElementById('exp-category');

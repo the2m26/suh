@@ -115,7 +115,7 @@ async function saveInvoiceScheduleSettings() {
   const { error } = await sb.from('settings').upsert({ key: 'invoice_schedule', value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
   if (sbErr(error, 'Нэхэмжлэлийн хуваарь хадгалах')) return;
   invoiceSchedule = value;
-  logActivity('edit', 'nbb-settings', null, `Нэхэмжлэлийн хуваарь — бvртгэх:${accrueDay}, илгээх:${sendDay}, төлөх хугацаа:${dueDay}`);
+  logActivity('edit', 'nbb-settings', null, `Нэхэмжлэлийн хуваарь — бүртгэх:${accrueDay}, илгээх:${sendDay}, төлөх хугацаа:${dueDay}`);
   toast('Нэхэмжлэлийн хуваарь хадгалагдлаа ✓', 'success');
 }
 
@@ -213,7 +213,7 @@ async function recordMonthlyInvoice(auto) {
   if (skipped) summary += ` Энэ сарын ${skipped} нэхэмжлэлийг Журналд аль хэдийн бүртгэсэн байна.`;
   if (failed) summary += ` ${failed} алдаатай (Console үзнэ үү).`;
   toast(auto ? `Нэхэмжлэл автоматаар: ${summary}` : summary, failed ? 'error' : 'success');
-  if (succeeded > 0) logActivity('invoice', 'accounting', null, `${yearMonth} сарын нэхэмжлэх — ${succeeded} бvртгэгдэв${skipped?`, ${skipped} алгассан`:''}${failed?`, ${failed} алдаатай`:''}`);
+  if (succeeded > 0) logActivity('invoice', 'accounting', null, `${yearMonth} сарын нэхэмжлэх — ${succeeded} бүртгэгдэв${skipped?`, ${skipped} алгассан`:''}${failed?`, ${failed} алдаатай`:''}`);
   invoiceExcludedIds.clear();
   if (typeof renderInvoiceTab === 'function') renderInvoiceTab();
   // ⚠️ 2026-07-20: Мэдэгдэл илгээх үйлдлийг ЭНДЭЭС ТУСГААРЛАВ — "Журналд
@@ -261,8 +261,8 @@ async function buildInvoiceContentFor(kind, entity, yearMonth) {
   return lines.join('\n');
 }
 
-// yearMonth (жиш "2026-07") хvлээн авагч бvрт нь задаргаатай, тухайлсан
-// агуулгатай "Нэхэмжлэл" төрлийн НЭГ мэдэгдэл (олон хvнд зэрэг) vvсгэнэ.
+// yearMonth (жиш "2026-07") хүлээн авагч бүрт нь задаргаатай, тухайлсан
+// агуулгатай "Нэхэмжлэл" төрлийн НЭГ мэдэгдэл (олон хүнд зэрэг) үүсгэнэ.
 async function _sendInvoiceNotifications(rows, yearMonth) {
   if (!rows.length) return;
   const [y, m] = yearMonth.split('-').map(Number);
@@ -333,7 +333,11 @@ function buildLiveInvoicePreviewRows() {
 // ийн ХАЖУУГААР нэмэлтээр дуудагдана (тэдгээрийн одоогийн логикийг
 // огт өөрчлөхгүй).
 // ------------------------------------------------------------
-async function accountingRecordResidentPayment(apt, amountPaid, date, description) {
+// ⚠️ 2026-08-05 нэмэв: refKey (заавал биш) — олон сарын өрийг НЭГ дор
+// (bulk) төлөхөд, сар бүрт ТУСДАА, ДАВХЦАХГүй journal entry (мөн reference)
+// үүсгэх шаардлагатай болсон тул нэмэв. Хоосон бол хуучин зан төлөв (date-ээр
+// л ялгагдана) хэвээр үлдэнэ — backward compatible.
+async function accountingRecordResidentPayment(apt, amountPaid, date, description, refKey) {
   const party = 'resident:' + apt;
   const openBalance = Math.max(await db_getPartyBalance('1110', party), 0);
   const settleAmount = Math.min(amountPaid, openBalance);
@@ -343,10 +347,11 @@ async function accountingRecordResidentPayment(apt, amountPaid, date, descriptio
   if (settleAmount > 0) lines.push({ account: '1110', debit: 0, credit: settleAmount, party });
   if (overpayAmount > 0) lines.push({ account: '3050', debit: 0, credit: overpayAmount, party });
 
-  return db_createJournalEntry(date, description || `${apt} тоот — төлбөр хүлээн авав`, `payment:resident:${apt}:${date}`, lines);
+  const ref = refKey ? `payment:resident:${apt}:${date}:${refKey}` : `payment:resident:${apt}:${date}`;
+  return db_createJournalEntry(date, description || `${apt} тоот — төлбөр хүлээн авав`, ref, lines);
 }
 
-async function accountingRecordBusinessPayment(businessId, amountPaid, date, description) {
+async function accountingRecordBusinessPayment(businessId, amountPaid, date, description, refKey) {
   const party = 'business:' + businessId;
   const openBalance = Math.max(await db_getPartyBalance('1120', party), 0);
   const settleAmount = Math.min(amountPaid, openBalance);
@@ -356,7 +361,8 @@ async function accountingRecordBusinessPayment(businessId, amountPaid, date, des
   if (settleAmount > 0) lines.push({ account: '1120', debit: 0, credit: settleAmount, party });
   if (overpayAmount > 0) lines.push({ account: '3050', debit: 0, credit: overpayAmount, party });
 
-  return db_createJournalEntry(date, description || `Аж ахуйн нэгж #${businessId} — төлбөр хүлээн авав`, `payment:business:${businessId}:${date}`, lines);
+  const ref = refKey ? `payment:business:${businessId}:${date}:${refKey}` : `payment:business:${businessId}:${date}`;
+  return db_createJournalEntry(date, description || `Аж ахуйн нэгж #${businessId} — төлбөр хүлээн авав`, ref, lines);
 }
 
 // ------------------------------------------------------------

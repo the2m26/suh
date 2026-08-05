@@ -281,24 +281,41 @@ function bizDetailPay() {
 function openBizPayModal(b) {
   selectedBusinessForDetail = b;
   document.getElementById('biz-pay-name').textContent = b.name;
-  document.getElementById('biz-pay-month').value = CUR_MONTH;
   document.getElementById('biz-pay-ref').value = '';
   document.getElementById('biz-pay-method').value = 'qpay';
   document.querySelectorAll('#modal-biz-payment .pay-method-card').forEach(c=>c.classList.remove('selected'));
   document.querySelector('#modal-biz-payment .pay-method-card').classList.add('selected');
 
-  // Сууц өмчлөгчийн "Төлбөр бүртгэх" модалтай адил зарчмаар СӨХ-ийн төлбөрийн задаргааг харуулна.
+  // ⚠️ 2026-08-05 засав: ӨМНӨ зөвхөн ОДООГИЙН сарын задаргааг харуулж, өмнөх
+  // төлөгдөөгүй сарууд (хуримтлагдсан өр) огт тооцоогүй байсан — ААН
+  // "хөөж" (сонгохгүй, эртнээс дараалан) төлдөг ёстой тул, _getUnpaidMonths()-оор
+  // БҮХ төлөгдөөгүй сарыг тус бүр мөрөөр, нийт нийлбэр дүнтэйгээр харуулна.
   // ⚠️ Өмчлөгч ААН зөвхөн М² талбайн төлбөрөөс чөлөөлөгдөнө — Хог/Зогсоол/Агуулахын
   // (САХ) төлбөрийг ашигласан тохиолдолдоо үргэлжлүүлж төлнө.
   const bd = document.getElementById('biz-pay-fee-breakdown');
   const feeRows = feeCatalog.filter(f => f.active && f.applies_to==='business')
     .map(f => ({ name: f.name, amt: Math.round(_feeQuantity(b, 'business', f.unit_type) * (+f.rate||0)) }));
-  const total = feeRows.reduce((s,x)=>s+x.amt, 0);
+  const monthlyTotal = feeRows.reduce((s,x)=>s+x.amt, 0);
+  const missingMonths = _getUnpaidMonths(b, 'business', 'start');
   bd.style.display = 'block';
-  bd.innerHTML = `<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">📋 ${esc(b.name)} — СӨХ-ийн төлбөрийн задаргаа</div>
+
+  if (!missingMonths.length) {
+    bd.innerHTML = `<div style="font-size:12px;font-weight:700;color:var(--success)">✓ ${esc(b.name)} — ${CUR_MONTH}-р сар хүртэлх бүх төлбөр төлөгдсөн байна</div>`;
+    document.getElementById('biz-pay-amount').value = 0;
+    openModal('modal-biz-payment');
+    return;
+  }
+
+  const prevMonths = missingMonths.slice(0, -1);
+  const total = monthlyTotal * missingMonths.length;
+  bd.innerHTML = `
+    ${prevMonths.length ? `<div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:8px">⚠️ Өмнөх төлөгдөөгүй сарууд</div>
+    ${prevMonths.map(m=>`<div class="summary-row"><span class="summary-key">${m}-р сарын хураамж</span><span class="summary-val font-mono">${fmtMoney(monthlyTotal)}</span></div>`).join('')}
+    <div style="height:1px;background:var(--border);margin:8px 0"></div>` : ''}
+    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">📋 ${esc(b.name)} — ${CUR_MONTH}-р сарын задаргаа</div>
     ${feeRows.filter(x=>x.amt).map(x=>`<div class="summary-row"><span class="summary-key">${esc(x.name)}</span><span class="summary-val font-mono">${fmtMoney(x.amt)}</span></div>`).join('')}
     <div class="summary-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px">
-      <span class="summary-key" style="font-weight:700;color:var(--text)">Нийт дүн</span>
+      <span class="summary-key" style="font-weight:700;color:var(--text)">Нийт төлөх дүн (${missingMonths.length} сар)</span>
       <span class="summary-val text-accent" style="font-size:16px">${fmtMoney(total)}</span></div>`;
   document.getElementById('biz-pay-amount').value = total;
   openModal('modal-biz-payment');
@@ -312,26 +329,33 @@ async function saveBizPayment() {
   const b = selectedBusinessForDetail; if(!b) return;
   const amount = +document.getElementById('biz-pay-amount').value;
   if(!amount){toast('Дүн оруулна уу','error');return;}
-  const month = +document.getElementById('biz-pay-month').value;
   const method = document.getElementById('biz-pay-method').value;
   const ref = document.getElementById('biz-pay-ref').value.trim();
-  const data = {
-    apt: null, type:'income', amount, method, ref,
-    month, year: CUR_YEAR, date: todayStr(),
-    desc: b.name + ' гэрээний төлбөр', status:'completed', category:'business', businessId: b.id
-  };
-  const ok = await db_saveTransaction(data);
-  if(!ok) { toast('Бүртгэхэд алдаа гарлаа — таны рольд энэ үйлдэл хийх эрх байхгүй байж болзошгүй','error'); return; }
-  transactions.push({id:nextId++,dbId:data.id,...data});
-  // Нягтлан бодох бүртгэлийн журнал бичилт (нэмэлт — гол гүйлгээг зогсоохгүй)
-  if (typeof accountingRecordBusinessPayment === 'function') {
-    accountingRecordBusinessPayment(b.id, amount, todayStr(), `${b.name} — ${month}-р сарын түрээс`)
-      .then(res => { if (!res.success) console.warn('Journal entry үүсгэхэд алдаа:', res.error); })
-      .catch(e => console.warn('Journal entry үүсгэхэд алдаа:', e));
+  // ⚠️ 2026-08-05 нэмэв: аль сараа төлөхөө ӨӨРӨӨ СОНГОДОГГүй — эртний
+  // (хамгийн эхний) төлөгдөөгүй сараас эхлэн, дараалан "хөөж" сар БүРД
+  // ТУСДАА transaction мөр + НББ journal entry үүсгэнэ (finance.js-ийн
+  // _allocatePaymentToMonths() дахин ашиглав).
+  const allocations = _allocatePaymentToMonths(b, 'business', amount);
+  if(!allocations.length){toast('Төлөх өр байхгүй байна','error');return;}
+  for (const a of allocations) {
+    const data = {
+      apt: null, type:'income', amount:a.amount, method, ref,
+      month:a.month, year: CUR_YEAR, date: todayStr(),
+      desc: b.name + ' гэрээний төлбөр', status:'completed', category:'business', businessId: b.id
+    };
+    const ok = await db_saveTransaction(data);
+    if(!ok) { toast('Бүртгэхэд алдаа гарлаа — таны рольд энэ үйлдэл хийх эрх байхгүй байж болзошгүй','error'); return; }
+    transactions.push({id:nextId++,dbId:data.id,...data});
+    // Нягтлан бодох бүртгэлийн журнал бичилт (нэмэлт — гол гүйлгээг зогсоохгүй)
+    if (typeof accountingRecordBusinessPayment === 'function') {
+      accountingRecordBusinessPayment(b.id, a.amount, todayStr(), `${b.name} — ${a.month}-р сарын түрээс`, String(a.month))
+        .then(res => { if (!res.success) console.warn('Journal entry үүсгэхэд алдаа:', res.error); })
+        .catch(e => console.warn('Journal entry үүсгэхэд алдаа:', e));
+    }
   }
-  logActivity('payment', 'transactions', b.id, `${b.name} — ${fmtMoney(amount)}`);
+  logActivity('payment', 'transactions', b.id, `${b.name} — ${fmtMoney(amount)} (${allocations.length} сар)`);
   closeModal('modal-biz-payment');
-  toast(b.name+' '+month+'-р сарын төлбөр бүртгэгдлээ ✓','success');
+  toast(b.name+' — '+allocations.length+' сарын төлбөр бүртгэгдлээ ✓','success');
 }
 function editBusiness(id) {
   if(!canWrite('businesses')) { toast('Танд энэ үйлдлийг хийх эрх байхгүй байна','error'); return; }

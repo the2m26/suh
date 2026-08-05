@@ -452,6 +452,7 @@
   <script src="https://unpkg.com/pizzip@3.0.6/dist/pizzip-utils.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.11/purify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 </head>
 <body>
 
@@ -1041,6 +1042,7 @@
               <thead>
                 <tr style="background:rgba(11,26,46,0.8)">
                   <th style="width:36px">№</th>
+                  <th style="width:70px;white-space:nowrap">БАРКОД</th>
                   <th style="min-width:170px;white-space:nowrap">НЭР, БРЕНД</th>
                   <th style="width:100px;white-space:nowrap">МАРК/СЕРИАЛ</th>
                   <th style="width:130px;white-space:nowrap">ТӨРӨЛ</th>
@@ -1057,7 +1059,7 @@
                 </tr>
                 <tr id="asset-list-total-row" style="background:rgba(59,130,246,0.1);border-bottom:2px solid var(--border-light)">
                   <td style="font-weight:700;white-space:nowrap">НИЙТ</td>
-                  <td colspan="5"></td>
+                  <td colspan="6"></td>
                   <td id="asset-total-cost" class="dt-mono" style="text-align:right;font-weight:700;white-space:nowrap"></td>
                   <td id="asset-total-accum" class="dt-mono" style="text-align:right;font-weight:700;white-space:nowrap"></td>
                   <td id="asset-total-nbv" class="dt-mono" style="text-align:right;font-weight:700;white-space:nowrap"></td>
@@ -4361,17 +4363,10 @@ where category='invoice' and sent_at >= 'YYYY-MM-01' and sent_at < 'дараа �
       <div id="pay-overdue-warning" style="display:none;background:var(--danger-bg);border:1px solid var(--danger);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--danger)">
       </div>
 
-      <div class="form-group">
-        <label>Сар</label>
-        <select id="pay-month">
-          <option value="1" selected>1-р сар</option><option value="2">2-р сар</option>
-          <option value="3">3-р сар</option><option value="4">4-р сар</option>
-          <option value="5">5-р сар</option><option value="6">6-р сар</option>
-          <option value="7">7-р сар</option><option value="8">8-р сар</option>
-          <option value="9">9-р сар</option><option value="10">10-р сар</option>
-          <option value="11">11-р сар</option><option value="12">12-р сар</option>
-        </select>
-      </div>
+      <!-- ⚠️ 2026-08-05 засав: "Сар" сонгогч арилгав — резидент/ААН аль сараа
+           төлөхөө ӨӨРӨӨ СОНГОДОГГүй, эртний төлөгдөөгүй сараас эхлэн дараалан
+           "хөөж" төлдөг зарчимд шилжсэн тул шаардлагагүй болов (дээрх задаргаа
+           АЛЬ сарууд хамрагдахыг аль хэдийн харуулна). -->
       <div class="form-group">
         <label>Төлбөрийн арга</label>
         <div class="pay-method-grid">
@@ -4425,17 +4420,8 @@ where category='invoice' and sent_at >= 'YYYY-MM-01' and sent_at < 'дараа �
         <div id="biz-pay-name" style="padding:8px 12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--text)">—</div>
       </div>
       <div id="biz-pay-fee-breakdown" style="display:none;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px"></div>
-      <div class="form-group">
-        <label>Сар</label>
-        <select id="biz-pay-month">
-          <option value="1">1-р сар</option><option value="2">2-р сар</option>
-          <option value="3">3-р сар</option><option value="4">4-р сар</option>
-          <option value="5">5-р сар</option><option value="6">6-р сар</option>
-          <option value="7">7-р сар</option><option value="8">8-р сар</option>
-          <option value="9">9-р сар</option><option value="10">10-р сар</option>
-          <option value="11">11-р сар</option><option value="12">12-р сар</option>
-        </select>
-      </div>
+      <!-- ⚠️ 2026-08-05 засав: "Сар" сонгогч арилгав — дээрх задаргаа АЛЬ сарууд
+           хамрагдахыг аль хэдийн харуулна ("хөөж" төлдөг зарчим). -->
       <div class="form-group">
         <label>Төлбөрийн арга</label>
         <div class="pay-method-grid">
@@ -5039,24 +5025,41 @@ function showPage(name) {
 // төлөх ёстой тул, эхний тасарсан сараас хойшхи бүх сарыг өртэй гэж тооцно —
 // зөвхөн "энэ сард төлөөгүй" биш, харин "нийт хэдэн сарын өртэй байгаа" гэдгийг
 // зөв тусгах зорилготой)
+// ⚠️ 2026-08-05 нэмэв: Резидент/ААН хоёулаа ашигладаг "хэдэн сар төлөгдөөгүй,
+// АЛЬ сарууд тэдгээр вэ" тооцооллын НЭГ Л эх сурвалж — өмнө 3 газарт (debt info,
+// payment modal харуулалт, savePayment бүртгэл) тус тусад нь давхар бичигдэж,
+// зөрчилдөх эрсдэлтэй байсан логикийг НЭГТГЭВ. Буцаах утга: [хамгийн эртнээс →
+// одоогийн сар хүртэлх, төлөгдөөгүй сарын дугааруудын жагсаалт].
+function _getUnpaidMonths(entity, entityType, startDateField, month = CUR_MONTH, year = CUR_YEAR) {
+  const paidMonths = new Set(
+    transactions.filter(t => t && t.type==='income' && t.category===entityType && t.year===year &&
+      (entityType==='resident' ? String(t.apt)===String(entity.apt) : t.businessId===entity.id)
+    ).map(t=>t.month)
+  );
+  // ⚠️ 2026-07-18: Тухайн жилээс өмнө өмчилсөн/эхэлсэн бол 1-р сараас (хуучин зан
+  // төлөв), тухайн жилдээ бол яг тэр сараас, ирээдүйд (алдаатай өгөгдөл) бол
+  // энэ жилд огт өр үүсэхгүй байхаар тооцно.
+  let startMonth = 1;
+  const sd = entity[startDateField] ? new Date(entity[startDateField]) : null;
+  if (sd && !isNaN(sd)) {
+    const sy = sd.getFullYear(), sm = sd.getMonth()+1;
+    if (sy === year) startMonth = sm;
+    else if (sy > year) startMonth = month + 1;
+  }
+  let consecutivePaid = startMonth - 1;
+  for (let m=startMonth; m<=month; m++) { if (paidMonths.has(m)) consecutivePaid=m; else break; }
+  const missing = [];
+  for (let m=consecutivePaid+1; m<=month; m++) missing.push(m);
+  return missing;
+}
 function getResidentDebtInfo(month = CUR_MONTH, year = CUR_YEAR) {
-  return residents.map(r => {
-    const paidMonths = new Set(transactions.filter(t=>t&&t.type==='income'&&t.category==='resident'&&String(t.apt)===String(r.apt)&&t.year===year).map(t=>t.month));
-    // ⚠️ 2026-07-18: Тухайн жилээс өмнө өмчилсөн бол 1-р сараас (хуучин зан төлөв),
-    // тухайн жилдээ өмчилсөн бол яг тэр сараас, ирээдүйд (алдаатай өгөгдөл) өмчилсөн
-    // бол энэ жилд огт өр үүсэхгүй байхаар тооцно.
-    let startMonth = 1;
-    const od = r.ownDate ? new Date(r.ownDate) : null;
-    if(od && !isNaN(od)) {
-      const oy = od.getFullYear(), om = od.getMonth()+1;
-      if(oy === year) startMonth = om;
-      else if(oy > year) startMonth = month + 1;
-    }
-    let consecutivePaid = startMonth - 1;
-    for (let m=startMonth; m<=month; m++) { if (paidMonths.has(m)) consecutivePaid=m; else break; }
-    const monthsUnpaid = Math.max(0, month - consecutivePaid);
+  // ⚠️ 2026-08-05 засав: Cosmo-ийн виртуал резидент мөр (apt=0, ownDate/төлбөрийн
+  // τүүхгүй) энд орж, "1-р сараас эхлэн төлөлтгүй" гэж буруу тооцогдож, өрийн
+  // жагсаалтад "8 сарын өртэй" мэт харагдаж байсныг засав.
+  return residents.filter(r => r.apt !== 0).map(r => {
+    const missing = _getUnpaidMonths(r, 'resident', 'ownDate', month, year);
     const fee = calcFee(r);
-    return { type:'resident', id:r.apt, label:String(r.apt), name:(r.firstname||r.owner||'')+' '+(r.lastname||''), monthsUnpaid, debtAmount: monthsUnpaid*fee };
+    return { type:'resident', id:r.apt, label:String(r.apt), name:(r.firstname||r.owner||'')+' '+(r.lastname||''), monthsUnpaid: missing.length, debtAmount: missing.length*fee };
   }).filter(x => x.monthsUnpaid > 0);
 }
 // Мөн адил — аж ахуйн нэгжид (зөвхөн түрээслэгч, monthlyFee>0-той, өөрөөр хэлбэл
@@ -5064,18 +5067,8 @@ function getResidentDebtInfo(month = CUR_MONTH, year = CUR_YEAR) {
 // огт нэхэмжлэгддэггүй тул "өртэй" тооцоход хэзээ ч ороход учиргүй.
 function getBusinessDebtInfo(month = CUR_MONTH, year = CUR_YEAR) {
   return businesses.filter(b=>+b.monthlyFee>0).map(b => {
-    const paidMonths = new Set(transactions.filter(t=>t&&t.type==='income'&&t.category==='business'&&t.businessId===b.id&&t.year===year).map(t=>t.month));
-    let startMonth = 1;
-    const sd = b.start ? new Date(b.start) : null;
-    if(sd && !isNaN(sd)) {
-      const sy = sd.getFullYear(), sm = sd.getMonth()+1;
-      if(sy === year) startMonth = sm;
-      else if(sy > year) startMonth = month + 1;
-    }
-    let consecutivePaid = startMonth - 1;
-    for (let m=startMonth; m<=month; m++) { if (paidMonths.has(m)) consecutivePaid=m; else break; }
-    const monthsUnpaid = Math.max(0, month - consecutivePaid);
-    return { type:'business', id:b.id, label:b.name, name:b.name, monthsUnpaid, debtAmount: monthsUnpaid*(+b.monthlyFee) };
+    const missing = _getUnpaidMonths(b, 'business', 'start', month, year);
+    return { type:'business', id:b.id, label:b.name, name:b.name, monthsUnpaid: missing.length, debtAmount: missing.length*(+b.monthlyFee) };
   }).filter(x => x.monthsUnpaid > 0);
 }
 
@@ -5637,7 +5630,9 @@ async function generateReport(type) {
     // аль хэдийн ашигласан зөв загвараар (residents+businesses хоёуланг) нэгтгэв.
     const paidApts = transactions.filter(t=>t&&t.type==='income'&&t.category==='resident'&&t.month===selMonth&&t.year===selYear).map(t=>String(t.apt));
     const paidBizIds = transactions.filter(t=>t&&t.type==='income'&&t.category==='business'&&t.month===selMonth&&t.year===selYear).map(t=>t.businessId);
-    const overdueRes = residents.filter(r=>r&&!paidApts.includes(String(r.apt)));
+    // ⚠️ 2026-08-05 засав: Cosmo-ийн виртуал резидент мөр (apt=0) энд ч мөн адил
+    // "төлбөр хэзээ ч төлөөгүй" гэж буруу орж ирдэг байсныг хассан.
+    const overdueRes = residents.filter(r=>r&&r.apt!==0&&!paidApts.includes(String(r.apt)));
     const overdueBiz = businesses.filter(b=>b&&!paidBizIds.includes(b.id));
     const totalRes = overdueRes.reduce((s,r)=>s+calcFee(r),0);
     const totalBiz = overdueBiz.reduce((s,b)=>s+(b.monthlyFee||computeBizFee(b)),0);
