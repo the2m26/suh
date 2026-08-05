@@ -3,7 +3,7 @@ import { sb } from '../lib/supabase';
 
 // ⚠️ userapp.html-ийн openQpayModal()-той ЯГ ИЖИЛ логик — Edge Function
 // (qpay-create-invoice), realtime сонсох + 5 секундын polling fallback.
-export default function QpayModal({ amount, apt, residentId, onClose }) {
+export default function QpayModal({ amount, apt, residentId, missingMonths, onClose }) {
   const [status, setStatus] = useState('loading'); // loading | ready | error | paid
   const [qrImage, setQrImage] = useState(null);
   const [errMsg, setErrMsg] = useState('');
@@ -14,7 +14,7 @@ export default function QpayModal({ amount, apt, residentId, onClose }) {
     let cancelled = false;
     (async () => {
       const { data, error } = await sb.functions.invoke('qpay-create-invoice', {
-        body: { residentId, businessId: null, apt, month: new Date().getMonth() + 1, year: new Date().getFullYear(), amount },
+        body: { residentId, businessId: null, apt, month: new Date().getMonth() + 1, year: new Date().getFullYear(), amount, monthsCovered: missingMonths },
       });
       if (cancelled) return;
       if (error || !data || data.error) {

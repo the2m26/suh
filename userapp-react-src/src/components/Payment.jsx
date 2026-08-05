@@ -89,7 +89,8 @@ export default function Payment({ profile }) {
       )) : <div className="pool-empty">Төлбөрийн түүх алга</div>}
 
       {showQpay && (
-        <QpayModal amount={totalDue || breakdown.total} apt={resident.apt} residentId={resident.id} onClose={() => setShowQpay(false)} />
+        <QpayModal amount={totalDue || breakdown.total} apt={resident.apt} residentId={resident.id}
+          missingMonths={missingMonths.length ? missingMonths : [curMonth]} onClose={() => setShowQpay(false)} />
       )}
     </div>
   );
