@@ -1,5 +1,24 @@
 // assets.js — Үндсэн хөрөнгө, Элэгдэл, Засвар үйлчилгээний модуль (suh.html-ээс тусгаарлав)
 
+// ⚠️ 2026-08-05 нэмэв: asset_barcode (жишээ нь "AST-000123")-г бодит зурган
+// Code128 barcode SVG болгож үүсгэнэ (JsBarcode CDN сан ашиглана — suh.html-д
+// холбогдсон). Хэвлэхдээ Supabase-ээс кодыг шинээр дуудах логик тусад нь
+// хийгдэнэ (энд зөвхөн ПРОГРАМД харуулах зурган дүрслэл л үүсгэнэ).
+function _assetBarcodeSvg(value, heightPx) {
+  if (!value || typeof JsBarcode === 'undefined') return '';
+  const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  try {
+    JsBarcode(svgEl, value, {
+      format: 'CODE128', displayValue: false, margin: 0,
+      height: heightPx, width: 1.4, background: 'transparent', lineColor: '#fff',
+    });
+  } catch (e) {
+    console.error('barcode үүсгэхэд алдаа:', e);
+    return '';
+  }
+  return new XMLSerializer().serializeToString(svgEl);
+}
+
 let editingMaintenanceId = null;
 
 // fixed_assets.responsible нь ажилтны fullName-г ТЕКСТЭЭР шууд хадгалдаг (id биш) тул,
@@ -17,7 +36,7 @@ async function db_loadAssets() {
   if(error){console.error('assets load error:', JSON.stringify(error), error.message);return;}
   if(!data){console.error('assets: data null');return;}
   assets = data.map(a=>({
-    id:a.id, dbId:a.id, name:a.name||'', code:a.code||'', assetGroup:a.asset_group||'hoa',
+    id:a.id, dbId:a.id, name:a.name||'', code:a.code||'', assetBarcode:a.asset_barcode||'', assetGroup:a.asset_group||'hoa',
     category:a.category||'office_equipment', subcategory:a.subcategory||'',
     quantity:+a.quantity||1, unit:a.unit||'ширхэг', purchaseDate:a.purchase_date||'',
     cost:+a.original_cost||0, vendor:a.vendor||'',
@@ -50,7 +69,25 @@ async function db_saveAsset(a) {
   } else {
     const {data,error} = await sb.from('fixed_assets').insert(row).select().single();
     if(error){console.error('asset insert error:',error.message); return false;}
-    if(data) a.dbId = data.id;
+    if(data) {
+      a.dbId = data.id;
+      // ⚠️ 2026-08-05 нэмэв: шинээр бүртгэгдсэн хөрөнгийн ID үүссэний ДАРАА
+      // (insert хийгээгүй бол ID үл мэдэгдэх тул заавал 2 дахь алхам) — түүнд
+      // тулгуурласан, давхцахгүй Code128 barcode үүсгэж, яг тэр мөрийн
+      // asset_barcode баганад буцаан бичнэ.
+      // ⚠️ 2026-08-05 засав (2): "AST-{ID}" маягаас "{Улсын бүртгэлийн дугаар}-
+      // {ID}" болгож сольсон (AST угтвар арилгасан — нэмэлт тэмдэгт, дэмий
+      // зардал гэж үзсэн) — Улсын бүртгэлийн дугаар (СӨХ тохиргоо → reg_number)
+      // улсын хэмжээнд ХЭЗЭЭ Ч давтагдахгүй тул, ирээдүйд олон СӨХ-ийг нэг дор
+      // нэгтгэсэн ч (multi-tenant) barcode ХЭЗЭЭ Ч давхцахгүй байх баталгааг
+      // ОДООХООС тавьж өгнө.
+      const orgProfile = await _ensureSokhOrgProfile();
+      const regNumber = orgProfile?.reg_number || 'UNKNOWN';
+      const assetBarcode = `${regNumber}-` + String(data.id).padStart(6, '0');
+      const { error: bcErr } = await sb.from('fixed_assets').update({ asset_barcode: assetBarcode }).eq('id', data.id);
+      if (bcErr) console.error('asset_barcode бичихэд алдаа:', bcErr.message);
+      else a.assetBarcode = assetBarcode;
+    }
     return true;
   }
 }
@@ -387,7 +424,7 @@ function renderAssets(view, filter='', responsibleFilter='', locationFilter='') 
   });
   // НЭР, БРЕНД баганаар байнга A-Z (Монгол цагаан толгойн дараалал) харуулна
   list = list.slice().sort((a,b)=>(a.name||'').localeCompare((b.name||''), 'mn'));
-  const colspan = view==='list' ? 14 : 11;
+  const colspan = view==='list' ? 15 : 11;
   if(!list.length){
     body.innerHTML=`<tr><td colspan="${colspan}" style="text-align:center;padding:24px;color:var(--text-muted)">Хөрөнгө олдсонгүй</td></tr>`;
     if(view==='list') _updateAssetListTotals([]);
@@ -398,8 +435,11 @@ function renderAssets(view, filter='', responsibleFilter='', locationFilter='') 
     body.innerHTML = list.map((a,idx)=>{
       const {accumulated, bookValue} = computeDepreciation(a);
       const statusColor = a.status==='active'?'var(--success)':a.status==='repair'?'var(--warning)':'var(--text-muted)';
+      // ⚠️ 2026-08-05 нэмэв: мөрний өндөртэй (24px) яг адил өндөртэй зурган barcode багана
+      const barcodeCell = a.assetBarcode ? _assetBarcodeSvg(a.assetBarcode, 24) : '';
       return `<tr style="cursor:pointer" onclick="openAssetDetail(${a.id})">
         <td><div class="avatar" style="width:24px;height:24px;font-size:10px;font-weight:700;background:rgba(59,130,246,0.18);color:#60A5FA">${idx+1}</div></td>
+        <td style="padding:2px 8px">${barcodeCell}</td>
         <td><span class="dt-title">${esc(a.name)}</span></td>
         <td class="dt-text dt-mono">${esc(a.code)||'—'}</td>
         <td class="dt-muted">${esc(a.subcategory)||'—'}</td>
@@ -630,6 +670,7 @@ function openAssetDetail(id) {
   const pct = assetLifeProgressPct(a);
   const statusColor = a.status==='active'?'var(--success)':a.status==='repair'?'var(--warning)':'var(--text-muted)';
   document.getElementById('asset-detail-body').innerHTML = `
+    ${a.assetBarcode ? `<div class="summary-row"><span class="summary-key">Баркод</span><span class="summary-val">${_assetBarcodeSvg(a.assetBarcode, 34)}</span></div>` : ''}
     <div class="summary-row"><span class="summary-key">Марк, сериал, баркод</span><span class="summary-val">${esc(a.code)||'—'}</span></div>
     <div class="summary-row"><span class="summary-key">Ангилал</span><span class="summary-val">${getAssetCategoryLabel(a.category)}</span></div>
     <div class="summary-row"><span class="summary-key">Төрөл</span><span class="summary-val">${esc(a.subcategory)||'—'}</span></div>

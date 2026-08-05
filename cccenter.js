@@ -414,7 +414,7 @@ function renderCCThreadView(apt, resident) {
           oninput="notifyCCTyping('${apt}');_ccAutoGrowReply()"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCCReply('${apt}');}"
           style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:6px 30px 6px 14px;color:var(--text);font-size:13px;line-height:20px;font-family:inherit;resize:none;height:34px;max-height:120px;box-sizing:border-box;overflow-y:auto">${_ccEditingId ? esc((_ccActiveMessages.find(m => m.id === _ccEditingId) || {}).text || '') : ''}</textarea>
-        <button onclick="_ccPickFile('${apt}')" id="cc-attach-btn" style="position:absolute;right:8px;bottom:8px;background:transparent;border:none;padding:0;cursor:pointer;color:var(--text-muted);display:flex">
+        <button onclick="_ccPickFile('${apt}')" id="cc-attach-btn" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:none;padding:0;cursor:pointer;color:var(--text-muted);display:flex">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.8"/><path d="M21 15l-5.2-5.2a2 2 0 0 0-2.8 0L5 18"/></svg>
         </button>
       </div>
@@ -466,11 +466,11 @@ async function sendCCReply(apt) {
 
   const label = `${apt} — ${resident.firstname || ''} ${resident.lastname || ''}`.trim();
   const row = {
-    type: 'notice', title: 'Таны илгээсэн санал, хүсэлтэд хариу', content: text,
+    type: 'notice', title: '', content: text,
     recipient: label, date: todayStr(), sent: 1,
     recipient_kind: 'resident', recipient_filter: 'specific', recipient_specific_id: resident.id,
     category: 'notice', channels: ['inapp'], source: 'cc-center',
-    recipients_snapshot: [{ name: resident.firstname + ' ' + resident.lastname, apt, ref_type: 'resident', ref_id: resident.id, title: 'Таны илгээсэн санал, хүсэлтэд хариу', content: text }],
+    recipients_snapshot: [{ name: resident.firstname + ' ' + resident.lastname, apt, ref_type: 'resident', ref_id: resident.id, title: '', content: text }],
     sender_id: currentUser?.id || null,
     sender_name: _mySenderInfo?.name || null,
     sender_position: _mySenderInfo?.position || null,
@@ -480,7 +480,18 @@ async function sendCCReply(apt) {
   if (!ok) { toast('Илгээхэд алдаа гарлаа', 'error'); return; }
 
   logActivity('notify', 'cc-center', notifications[0]?.id || null, `${label} — Хариу`);
-  await triggerPushForRecipients([{ apt, content: text }], 'Таны илгээсэн санал, хүсэлтэд хариу');
+  // ⚠️ 2026-08-05 засав: push notification-ий гарчиг "Таны илгээсэн санал,
+  // хүсэлтэд хариу" гэсэн имэйл шиг субъект-мөрөөс "[Ажилтны нэр], [албан
+  // тушаал]" болгож сольсон — албан ёсны чанарыг хадгалж, гэхдээ "хүнтэй
+  // харилцаж байгаа" мэдрэмж өгнө. Fallback (ажилтны мэдээлэл олдоогүй үед)
+  // нь "СөХ тохиргоо"-гоос (fintax.js-ийн _ensureSokhOrgProfile(), кэштэй)
+  // байгууллагын албан ёсны нэрийг татна ("Хүннү 2222 Резиденс СөХ" г.м).
+  const orgProfile = await _ensureSokhOrgProfile();
+  const pushTitle = _mySenderInfo?.name
+    ? (_mySenderInfo.position ? `${_mySenderInfo.name}, ${_mySenderInfo.position}` : _mySenderInfo.name)
+    : (orgProfile?.org_name || 'СөХ');
+  await triggerPushForRecipients([{ apt, content: text }], pushTitle);
+
 
   textEl.value = '';
   toast('Хариу илгээгдлээ ✓', 'success');
@@ -579,11 +590,11 @@ async function _ccHandleFileSelected(event) {
     if (!resident) throw new Error('resident олдсонгүй');
     const label = `${apt} — ${resident.firstname || ''} ${resident.lastname || ''}`.trim();
     const row = {
-      type: 'notice', title: 'Таны илгээсэн санал, хүсэлтэд хариу', content: '',
+      type: 'notice', title: '', content: '',
       recipient: label, date: todayStr(), sent: 1,
       recipient_kind: 'resident', recipient_filter: 'specific', recipient_specific_id: resident.id,
       category: 'notice', channels: ['inapp'], source: 'cc-center', attachment_path: path,
-      recipients_snapshot: [{ name: resident.firstname + ' ' + resident.lastname, apt, ref_type: 'resident', ref_id: resident.id, title: 'Таны илгээсэн санал, хүсэлтэд хариу', content: '' }],
+      recipients_snapshot: [{ name: resident.firstname + ' ' + resident.lastname, apt, ref_type: 'resident', ref_id: resident.id, title: '', content: '' }],
       sender_id: currentUser?.id || null,
       sender_name: _mySenderInfo?.name || null,
       sender_position: _mySenderInfo?.position || null,
