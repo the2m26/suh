@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { sb } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
-import { logActivity } from '../lib/dbUtils';
+import { logActivity, printCurrentPage, exportTableToXlsx } from '../lib/dbUtils';
 import { makeAptId } from '../lib/buildingHelpers';
 import { residentSqm, filterResidentsList, residentMonthBadges } from '../lib/residentHelpers';
 import { validateSpotAssignment, spotFullLabel } from '../lib/parkingStorageHelpers';
@@ -105,34 +105,33 @@ export default function Residents() {
 
   return (
     <div className="page page-wide">
-      <div className="page-header-row">
-        <h2>Сууц өмчлөгчийн бүртгэл</h2>
-        {perm.canAdd && <button className="btn-primary" onClick={() => setEditing('new')}>+ Сууц өмчлөгч нэмэх</button>}
-      </div>
+      <h2>Сууц өмчлөгчийн бүртгэл</h2>
 
-      <div className="gate-filters">
-        <input placeholder="Хайх (нэр, тоот, утас)..." value={query} onChange={(e) => setQuery(e.target.value)} />
-        <select value={buildingFilter} onChange={(e) => { setBuildingFilter(e.target.value); setEntranceFilter(''); }}>
-          <option value="">Бүх байр</option>
-          {buildings.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
-        </select>
-        {maxEntrances > 1 && (
+      <div className="flex-between mb-16">
+        <div className="gate-filters" style={{ marginBottom: 0 }}>
+          <select value={buildingFilter} onChange={(e) => { setBuildingFilter(e.target.value); setEntranceFilter(''); }}>
+            <option value="">Бүх байр</option>
+            {buildings.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}
+          </select>
           <select value={entranceFilter} onChange={(e) => setEntranceFilter(e.target.value)}>
             <option value="">Бүх орц</option>
-            {Array.from({ length: maxEntrances }, (_, i) => i + 1).map((e) => <option key={e} value={e}>{e}-р орц</option>)}
+            {Array.from({ length: maxEntrances || 1 }, (_, i) => i + 1).map((e) => <option key={e} value={e}>{e}-р орц</option>)}
           </select>
-        )}
+          <input placeholder="Хайх..." value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-outline" onClick={printCurrentPage}>Хэвлэх</button>
+          <button className="btn-outline" onClick={() => exportTableToXlsx('residents-main-table', 'Сууц_өмчлөгчид.xlsx')}>Экспорт</button>
+          {perm.canAdd && <button className="btn-primary" onClick={() => setEditing('new')}>+ Сууц өмчлөгч нэмэх</button>}
+        </div>
       </div>
 
       {loading && <div className="empty-state">Ачаалж байна...</div>}
       {!loading && !list.length && <div className="empty-state">Сууц өмчлөгч олдсонгүй</div>}
       {!loading && list.length > 0 && (
-        <>
-          <div className="dt-muted" style={{ marginBottom: 10 }}>
-            Нийт: {list.length} өмчлөгч · Төлбөрийн үлдэгдэлгүй: {list.filter((r) => paidThisMonthApts.has(String(r.apt))).length}
-          </div>
-          <div className="table-scroll">
-            <table className="data-table">
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table" id="residents-main-table">
               <thead>
                 <tr>
                   <th>№</th><th>Байр</th><th>Тоот</th><th>Талбай</th><th>Нэр</th><th>Овог</th>
@@ -183,7 +182,12 @@ export default function Residents() {
               </tbody>
             </table>
           </div>
-        </>
+          <div className="table-summary-bar">
+            <span>Нийт: {list.length} өмчлөгч</span>
+            <span style={{ color: 'var(--success)' }}>Төлбөрийн үлдэгдэлгүй: {list.filter((r) => paidThisMonthApts.has(String(r.apt))).length}</span>
+            <span style={{ color: 'var(--danger)' }}>Төлбөрийн үлдэгдэлтэй: {list.filter((r) => !paidThisMonthApts.has(String(r.apt))).length}</span>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -393,3 +393,21 @@ body.sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
 
 /* Copyright bar — бүх хуудсанд ижил, content body-ийн доор голлож. */
 .copyright-bar { text-align: center; padding: 12px 0 18px; font-size: 10.5px; color: #1E3A5F; }
+
+/* flex-between — эх suh.html-ийн жагсаалтын хуудсуудын filter мөрийн
+   стандарт загвар (зүүн шүүлтүүр, баруун товч). */
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.mb-16 { margin-bottom: 16px; }
+
+/* .table-summary-bar — хүснэгэлийн ДООД (эх suh.html-ийн res-stat-total
+   загвар, мөр ~838-841), карт доторх зураастай хэсэг. */
+.table-summary-bar {
+  padding: 10px 16px; border-top: 1px solid var(--border); display: flex; gap: 20px;
+  font-size: 11px; color: var(--text-muted);
+}
+
+/* .table-scroll-sticky — толгой мөр (thead) sticky болгож, зөвхөн мөрүүд
+   (tbody) дотоод скроллдог, харин шүүлтүүр/summary/footer дэлгэцэнд
+   тогтмол харагдана (хэрэглэгчийн 2026-08-10 тодорхой хүсэлт). */
+.table-scroll-sticky { overflow: auto; max-height: calc(100vh - 260px); }
+.table-scroll-sticky .data-table thead th { position: sticky; top: 0; z-index: 2; background: #0B1A2E; }

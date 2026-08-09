@@ -1,4 +1,22 @@
 import { sb } from './supabase';
+import * as XLSX from 'xlsx';
+
+// suh.html-ийн printCurrentPage()/exportTableToXlsx() (мөр ~6710-6726) — жагсаалтын
+// хуудас бүрийн "Хэвлэх"/"Экспорт" товчны нийтлэг логик.
+export function printCurrentPage() {
+  window.print();
+}
+
+export function exportTableToXlsx(tableId, filename) {
+  const table = document.getElementById(tableId);
+  if (!table) { alert('Хүснэгт олдсонгүй'); return; }
+  try {
+    const wb = XLSX.utils.table_to_book(table, { sheet: 'Sheet1', raw: true });
+    XLSX.writeFile(wb, filename);
+  } catch (e) {
+    alert('Экспортод алдаа гарлаа: ' + e.message);
+  }
+}
 
 // db.js-ийн triggerPushForRecipients() (мөр ~58) — send-push Edge Function
 // дуудна, зөвхөн apt-той хүлээн авагчид үйлчилнэ. Алдаа гарвал зүгээр
