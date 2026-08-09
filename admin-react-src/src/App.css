@@ -28,15 +28,18 @@
 
 .app-shell { display: flex; min-height: 100vh; }
 
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
+
 .sidebar {
   width: 200px; flex-shrink: 0; background: #0B1A2E; border-right: 1px solid rgba(30,58,95,0.6);
   display: flex; flex-direction: column; padding: 14px 0;
 }
-.sidebar .logo { padding: 10px 16px 16px; font-size: 18px; font-weight: 700; }
+.sidebar .logo { padding: 10px 14px 8px; font-size: 18px; font-weight: 700; border-bottom: 1px solid rgba(30,58,95,0.5); }
 .sidebar .logo .accent { color: var(--accent); }
-.sidebar nav { display: flex; flex-direction: column; gap: 2px; flex: 1; overflow-y: auto; }
+.sidebar nav { display: flex; flex-direction: column; flex: 1; overflow-y: auto; padding: 8px 0; }
 .sidebar .nav-item {
-  padding: 9px 16px; color: var(--text-dim); font-size: 13px; border-left: 3px solid transparent;
+  padding: 8px 14px; color: var(--text-dim); font-size: 12.5px; font-weight: 500; border-left: 2px solid transparent;
+  margin: 1px 0;
 }
 .sidebar .nav-item:hover { background: var(--bg-hover); color: var(--text); }
 .sidebar .nav-item.active { border-left-color: var(--accent); color: var(--text); background: var(--bg-hover); }
@@ -52,14 +55,42 @@
 }
 .current-user-info button:hover { border-color: var(--danger); color: var(--danger); }
 
-.back-to-suh {
-  display: block; margin: 0 16px 12px; padding: 6px 8px; font-size: 10px;
-  color: var(--accent); text-decoration: none; border: 1px solid var(--border);
-  border-radius: var(--radius-sm); text-align: center;
-}
-.back-to-suh:hover { border-color: var(--accent); background: var(--accent-glow); }
+/* suh.html-ийн .sidebar-bottom .building-info (мөр ~104-109, 625-636) —
+   байрны нэгдсэн статистик, sidebar-ийн доод хэсэгт. */
+.sidebar-bottom { padding: 10px 10px 14px; border-top: 1px solid rgba(30,58,95,0.5); flex-shrink: 0; overflow-y: auto; max-height: 320px; }
+.building-info { background: rgba(30,58,95,0.3); border-radius: 6px; padding: 8px 10px; font-size: 10.5px; color: #64748B; }
+.building-info strong { color: #94A3B8; font-size: 11px; display: block; margin-bottom: 1px; }
+.building-info span { display: block; margin-top: 2px; color: #64748B; font-size: 10px; }
+.sidebar-version { margin-top: 6px; font-size: 9px; color: #1E3A5F; line-height: 1.5; }
 
-.main { flex: 1; min-width: 0; padding: 24px 28px; overflow-x: auto; }
+/* suh.html-ийн .sidebar-toggle (мөр ~55-68) — sidebar хураах/нээх товч,
+   1000px-ээс нарийсахад автоматаар хураагдана. */
+.sidebar-toggle {
+  position: fixed; top: 50%; left: 200px; z-index: 101;
+  width: 20px; height: 40px; background: #0B1A2E; border: 1px solid rgba(30,58,95,0.6); border-left: none;
+  border-radius: 0 6px 6px 0; display: flex; align-items: center; justify-content: center;
+  color: #64748B; cursor: pointer; transform: translateY(-50%);
+  transition: left .22s ease, color .12s, background .12s;
+}
+.sidebar-toggle:hover { color: #CBD5E1; background: rgba(30,58,95,0.7); }
+.sidebar-toggle svg { width: 12px; height: 12px; transition: transform .22s ease; }
+body.sidebar-collapsed .sidebar-toggle { left: 0; }
+body.sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+body.sidebar-collapsed .sidebar { transform: translateX(-100%); }
+body.sidebar-collapsed .main { margin-left: 0 !important; }
+
+.main { flex: 1; min-width: 0; overflow-x: auto; transition: margin-left .22s ease; }
+
+/* suh.html-ийн .topbar (мөр ~131-136) — бүх хуудасны дээд ирмэгт байх
+   sticky navigation bar, хуудасны гарчигтай. */
+.topbar {
+  background: #0B1A2E; border-bottom: 1px solid rgba(30,58,95,0.6);
+  padding: 0 20px; height: 48px; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+.page-title { font-size: 15px; font-weight: 700; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+.main-content { padding: 24px 28px; }
 .page-denied { color: var(--text-muted); padding: 40px; text-align: center; }
 
 /* --- Мэдээ (News) --- */
@@ -115,7 +146,7 @@
 .dash-table th { text-align: left; padding: 7px 8px; color: var(--text-muted); font-size: 10px; text-transform: uppercase; border-bottom: 1px solid var(--border); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dash-table td { padding: 8px 8px; border-bottom: 1px solid rgba(59,130,246,0.08); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dt-title { color: var(--text); font-weight: 600; }
-.dt-mono { font-family: var(--mono, monospace); color: var(--text-dim); }
+.dt-mono { font-variant-numeric: tabular-nums; }
 .dt-muted { color: var(--text-muted); font-size: 11px; }
 .status-ok { color: var(--success); }
 .status-muted { color: var(--text-muted); }
@@ -316,3 +347,11 @@
 .mbadge.paid { background: rgba(59,130,246,0.18); color: #3B82F6; border: 1px solid rgba(59,130,246,0.3); }
 .mbadge.unpaid { background: rgba(239,68,68,0.15); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); }
 .mbadge.future { background: rgba(100,116,139,0.1); color: #475569; border: 1px solid rgba(100,116,139,0.15); }
+
+/* suh.html-ийн scrollbar тохиргоо (мөр ~441-444) — mobile-style нимгэн
+   scrollbar, бүх элементэд ижил. */
+::-webkit-scrollbar, html::-webkit-scrollbar, body::-webkit-scrollbar { width: 6px !important; height: 6px !important; }
+::-webkit-scrollbar-track { background: transparent !important; }
+::-webkit-scrollbar-thumb { background: var(--border-light, #1E3A5F) !important; border-radius: 3px !important; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted) !important; }
+* { scrollbar-width: thin; scrollbar-color: var(--border-light, #1E3A5F) transparent; }

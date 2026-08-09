@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
+import Topbar from './components/Topbar';
 import ProtectedPage from './components/ProtectedPage';
 import Dashboard from './pages/Dashboard';
 import News from './pages/News';
@@ -51,6 +52,8 @@ function Shell() {
     <div className="app-shell">
       <Sidebar />
       <main className="main">
+        <Topbar />
+        <div className="main-content">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<ProtectedPage pageName="dashboard"><Dashboard /></ProtectedPage>} />
@@ -85,6 +88,7 @@ function Shell() {
               /residents, /business, /finance, гэх мэт (lib/permissions.js
               AUTH_MODULES-ийн 'page' талбартай тааруулах) */}
         </Routes>
+        </div>
       </main>
     </div>
   );
