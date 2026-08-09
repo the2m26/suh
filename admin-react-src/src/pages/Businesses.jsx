@@ -5,7 +5,7 @@ import { usePermissions } from '../hooks/usePermissions';
 import { logActivity } from '../lib/dbUtils';
 import { calcEntityFee, allocatePaymentToMonths } from '../lib/financeEngine';
 import { getSpotSqm, validateSpotAssignment, spotFullLabel } from '../lib/parkingStorageHelpers';
-import { filterBusinessesList, contractStatus } from '../lib/businessHelpers';
+import { filterBusinessesList, contractStatus, businessMonthBadges } from '../lib/businessHelpers';
 import { accountingRecordBusinessPayment } from '../lib/accountingBridge';
 import SpotPickerRow from '../components/SpotPickerRow';
 
@@ -109,21 +109,43 @@ export default function Businesses() {
           </div>
           <div className="table-scroll">
             <table className="data-table">
-              <thead><tr><th>Нэр</th><th>Төрөл</th><th>Захирал</th><th>Утас</th><th>Гэрээ дуусах</th><th>Сарын төлбөр</th><th></th></tr></thead>
+              <thead>
+                <tr>
+                  <th>№</th><th>Нэр</th><th>Регистр</th><th>Төрөл</th><th>Захирал</th>
+                  <th>Гар утас</th><th>Утас</th><th>И-мэйл</th><th>Гэрээний дугаар</th>
+                  <th>Эхэлсэн</th><th>Дуусах</th><th>Зогсоол</th><th>Агуулах</th><th>Машин</th>
+                  <th>Төлбөрийн түүх (1-12 сар)</th><th></th>
+                </tr>
+              </thead>
               <tbody>
-                {list.map((b) => {
+                {list.map((b, idx) => {
                   const status = contractStatus(b.end);
                   const paid = paidThisMonthIds.has(b.id);
+                  const badges = businessMonthBadges(b.id, transactions, curMonth, curYear);
                   return (
                     <tr key={b.id} onClick={() => setEditing(b)}>
+                      <td>
+                        <div className="res-row-avatar" style={{ background: paid ? 'rgba(59,130,246,0.18)' : 'rgba(239,68,68,0.15)', color: paid ? '#3B82F6' : '#EF4444' }}>{idx + 1}</div>
+                      </td>
                       <td className="dt-title">{b.name}</td>
-                      <td className="dt-text">{b.type === 'owner' ? 'Өмчлөгч' : 'Түрээслэгч'}</td>
-                      <td className="dt-text">{b.ceo || '—'}</td>
-                      <td className="dt-mono">{b.mobile || b.phone || '—'}</td>
-                      <td className="dt-text" style={{ color: status === 'expired' ? 'var(--danger)' : status === 'expiring' ? 'var(--warning)' : undefined }}>{b.end || '—'}</td>
-                      <td className="dt-text dt-mono">{b.monthlyFee.toLocaleString()}₮</td>
+                      <td className="dt-text dt-mono">{b.regno || '—'}</td>
+                      <td><span className="dt-muted" style={{ color: b.type === 'owner' ? 'var(--accent)' : 'var(--success)', fontWeight: 600 }}>{b.type === 'owner' ? 'Өмчлөгч' : 'Түрээслэгч'}</span></td>
+                      <td className="dt-title">{b.ceo || '—'}</td>
+                      <td className="dt-text dt-mono">{b.mobile || '—'}</td>
+                      <td className="dt-text dt-mono">{b.phone || '—'}</td>
+                      <td className="dt-text">{b.email || '—'}</td>
+                      <td className="dt-text">{b.contract || '—'}</td>
+                      <td className="dt-text dt-muted">{b.start || '—'}</td>
+                      <td className="dt-text" style={{ color: status === 'expired' ? 'var(--danger)' : status === 'expiring' ? 'var(--warning)' : 'var(--text-muted)' }}>{b.end || '—'}</td>
+                      <td className="dt-muted">{b.parkings.length ? b.parkings.join(', ') : '—'}</td>
+                      <td className="dt-muted">{b.storages.length ? b.storages.join(', ') : '—'}</td>
+                      <td className="dt-muted">{b.vehicles.length ? b.vehicles.join(', ') : '—'}</td>
+                      <td>
+                        <div className="month-badges">
+                          {badges.map((bd) => <span key={bd.month} className={'mbadge ' + bd.status} title={`${bd.month}-р сар`}>{bd.month}</span>)}
+                        </div>
+                      </td>
                       <td onClick={(e) => e.stopPropagation()}>
-                        <span className={'pay-dot ' + (paid ? 'paid' : 'unpaid')} />
                         {perm.canWrite && <button className="btn-ghost-sm" onClick={() => setPayingBusiness(b)} title="Төлбөр авах">₮</button>}
                         {perm.canWrite && <button className="btn-ghost-sm" onClick={() => setEditing(b)}>✎</button>}
                         {perm.canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(b)}>✕</button>}

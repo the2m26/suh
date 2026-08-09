@@ -258,7 +258,7 @@ export default function Dashboard() {
       <div className="dash-grid-2">
         <div className="card dash-card">
           <div className="dash-card-header"><span className="dash-card-title">Сүүлийн гүйлгээ</span></div>
-          <table className="data-table">
+          <table className="dash-table">
             <thead><tr><th>ТООТ/НЭР</th><th>Дүн</th><th>Хэлбэр</th><th>Огноо</th></tr></thead>
             <tbody>
               {recentTx.map((t, i) => {
@@ -291,7 +291,7 @@ export default function Dashboard() {
               <option value="months">Сараар</option>
             </select>
           </div>
-          <table className="data-table">
+          <table className="dash-table">
             <thead><tr><th>Тоот/Нэр</th><th>Төрөл</th><th>Хугацаа</th><th>Дүн</th></tr></thead>
             <tbody>
               {overdueCombined.map((x, i) => (

@@ -91,23 +91,37 @@ export default function Employees() {
               </div>
               <div className="table-scroll">
                 <table className="data-table">
-                  <thead><tr><th>Нэр</th><th>Регистр</th><th>Албан тушаал</th><th>Үндсэн цалин</th><th>Ажилд орсон</th><th>Утас</th><th>Төлөв</th><th></th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>№</th><th>Нэр</th><th>Регистр</th><th>ТТД</th><th>Албан тушаал</th>
+                      <th>Үндсэн цалин</th><th>Дансны дугаар</th><th>Ажилд орсон</th>
+                      <th>Гэрийн хаяг</th><th>Утас</th><th>И-мэйл</th><th>Төлөв</th><th></th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {list.map((e) => (
-                      <tr key={e.id} onClick={() => setEditing(e)}>
-                        <td className="dt-title">{employeeDisplayName(e)}</td>
-                        <td className="dt-mono">{e.registerNumber || '—'}</td>
-                        <td className="dt-text">{e.position || '—'}</td>
-                        <td className="dt-text dt-mono">{e.baseSalary.toLocaleString()}₮</td>
-                        <td className="dt-text">{e.hireDate || '—'}</td>
-                        <td className="dt-mono">{e.phone || '—'}</td>
-                        <td>{e.status === 'active' ? <span className="status-ok">Ажиллаж байгаа</span> : <span className="status-muted">Чөлөөлөгдсөн</span>}</td>
-                        <td onClick={(ev) => ev.stopPropagation()}>
-                          {perm.canWrite && <button className="btn-ghost-sm" onClick={() => setEditing(e)}>✎</button>}
-                          {perm.canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(e)}>✕</button>}
-                        </td>
-                      </tr>
-                    ))}
+                    {list.map((e, idx) => {
+                      const ibanFull = (e.ibanSuffix || e.bankAccount) ? `MN${e.ibanSuffix || ''}${e.bankAccount || ''}` : '—';
+                      return (
+                        <tr key={e.id} onClick={() => setEditing(e)}>
+                          <td><div className="res-row-avatar" style={{ background: 'rgba(59,130,246,0.18)', color: '#60A5FA' }}>{idx + 1}</div></td>
+                          <td className="dt-title">{employeeDisplayName(e)}</td>
+                          <td className="dt-text dt-mono">{e.registerNumber || '—'}</td>
+                          <td className="dt-text dt-mono">{e.ttd || '—'}</td>
+                          <td className="dt-text">{e.position || '—'}</td>
+                          <td className="dt-text dt-mono ta-right">{e.baseSalary.toLocaleString()}₮</td>
+                          <td className="dt-text dt-mono" title={e.bankName || ''}>{ibanFull}</td>
+                          <td className="dt-text">{e.hireDate || '—'}</td>
+                          <td className="dt-muted" style={{ maxWidth: 160, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={e.homeAddress || ''}>{e.homeAddress || '—'}</td>
+                          <td className="dt-text dt-mono">{e.phone || '—'}</td>
+                          <td className="dt-text" style={{ maxWidth: 150, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={e.email || ''}>{e.email || '—'}</td>
+                          <td>{e.status === 'active' ? <span className="status-ok">Ажиллаж байгаа</span> : <span className="status-muted">Чөлөөлөгдсөн</span>}</td>
+                          <td onClick={(ev) => ev.stopPropagation()}>
+                            {perm.canWrite && <button className="btn-ghost-sm" onClick={() => setEditing(e)}>✎</button>}
+                            {perm.canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(e)}>✕</button>}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { logActivity } from '../lib/dbUtils';
 import { makeAptId } from '../lib/buildingHelpers';
-import { residentSqm, filterResidentsList } from '../lib/residentHelpers';
+import { residentSqm, filterResidentsList, residentMonthBadges } from '../lib/residentHelpers';
 import { validateSpotAssignment, spotFullLabel } from '../lib/parkingStorageHelpers';
 import SpotPickerRow from '../components/SpotPickerRow';
 
@@ -135,26 +135,45 @@ export default function Residents() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Байр</th><th>Тоот</th><th>Талбай</th><th>Нэр</th><th>Овог</th>
-                  <th>Утас</th><th>Ам бүл</th><th>Хүүхэд</th><th></th>
+                  <th>№</th><th>Байр</th><th>Тоот</th><th>Талбай</th><th>Нэр</th><th>Овог</th>
+                  <th>Утас</th><th>И-мэйл</th><th>Өмчлөх огноо</th><th>Ам бүл</th>
+                  <th>0-6 нас</th><th>6-18 нас</th><th>Зогсоол</th><th>Агуулах</th><th>Машин</th>
+                  <th>Төлбөрийн түүх (1-12 сар)</th><th></th>
                 </tr>
               </thead>
               <tbody>
-                {list.map((r) => {
+                {list.map((r, idx) => {
                   const sqm = residentSqm(r, aptTypes);
                   const paid = paidThisMonthApts.has(String(r.apt));
+                  const badges = residentMonthBadges(r.apt, transactions, curMonth, curYear);
                   return (
                     <tr key={r.id} onClick={() => setEditing(r)}>
-                      <td className="dt-mono">{r.building}</td>
+                      <td>
+                        <div className="res-row-avatar" style={{ background: paid ? 'rgba(59,130,246,0.18)' : 'rgba(239,68,68,0.15)', color: paid ? '#3B82F6' : '#EF4444' }}>{idx + 1}</div>
+                      </td>
+                      <td className="dt-title dt-mono">{r.building}</td>
                       <td className="dt-title dt-mono">{r.apt}</td>
-                      <td className="dt-text">{sqm} м²</td>
+                      <td className="dt-text" style={{ whiteSpace: 'nowrap' }}>{sqm}<span className="dt-muted"> м²</span></td>
                       <td className="dt-title">{r.firstname || '—'}</td>
                       <td className="dt-text">{r.lastname || '—'}</td>
-                      <td className="dt-mono">{(r.phones[0]) || '—'}</td>
+                      <td className="dt-text dt-mono">
+                        {r.phones[0] || '—'}
+                        {r.phones.length > 1 && <><br /><span className="dt-muted">+{r.phones.length - 1}</span></>}
+                      </td>
+                      <td className="dt-text">{r.emails.filter(Boolean)[0] || '—'}</td>
+                      <td className="dt-text">{r.ownDate || '—'}</td>
                       <td className="dt-text ta-center">{r.people}</td>
-                      <td className="dt-text ta-center">{(r.child1 || 0) + (r.child2 || 0)}</td>
+                      <td className="dt-text ta-center">{r.child1 || 0}</td>
+                      <td className="dt-text ta-center">{r.child2 || 0}</td>
+                      <td className="dt-muted">{r.parkings.length ? r.parkings.join(', ') : '—'}</td>
+                      <td className="dt-muted">{r.storages.length ? r.storages.join(', ') : '—'}</td>
+                      <td className="dt-muted">{r.vehicles.length ? r.vehicles.join(', ') : '—'}</td>
+                      <td>
+                        <div className="month-badges">
+                          {badges.map((b) => <span key={b.month} className={'mbadge ' + b.status} title={`${b.month}-р сар`}>{b.month}</span>)}
+                        </div>
+                      </td>
                       <td onClick={(e) => e.stopPropagation()}>
-                        <span className={'pay-dot ' + (paid ? 'paid' : 'unpaid')} title={paid ? 'Энэ сар төлбөрлөгдсөн' : 'Энэ сар төлбөрлөгдөөгүй'} />
                         {perm.canWrite && <button className="btn-ghost-sm" onClick={() => setEditing(r)}>✎</button>}
                         {perm.canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(r)}>✕</button>}
                       </td>

@@ -42,3 +42,14 @@ export function contractStatus(endStr) {
   if (expiring) return 'expiring';
   return 'active';
 }
+
+// businesses.js-ийн renderBusinesses()-ийн 12 сарын гэрээний төлбөрийн
+// badge (мөр ~141-147).
+export function businessMonthBadges(businessId, transactions, curMonth, curYear) {
+  const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  return months.map((m) => {
+    const wasPaid = transactions.some((t) => t && t.businessId === businessId && t.month === m && t.year === curYear);
+    const isFuture = m > curMonth;
+    return { month: m, status: isFuture ? 'future' : (wasPaid ? 'paid' : 'unpaid') };
+  });
+}

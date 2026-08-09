@@ -19,6 +19,19 @@ export function residentSqm(r, aptTypes) {
   return getSqmByBuildingAndDoor(r.building, r.door, aptTypes);
 }
 
+// renderResidents()-ийн 12 сарын төлбөрийн түүхийн badge (мөр ~180-185) —
+// isBeforeSystemStart() ЗОРИУДААР орхигдсон (systemStartDate global тохиргоо
+// шаарддаг, цар хүрээг хязгаарлав) — future сар зөвхөн curMonth-оос хойш
+// эсэхээр л тодорхойлогдоно.
+export function residentMonthBadges(aptId, transactions, curMonth, curYear) {
+  const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  return months.map((m) => {
+    const wasPaid = transactions.some((t) => t && String(t.apt) === String(aptId) && t.month === m && t.year === curYear);
+    const isFuture = m > curMonth;
+    return { month: m, status: isFuture ? 'future' : (wasPaid ? 'paid' : 'unpaid') };
+  });
+}
+
 // renderResidents() дотоод filter логик — isVirtual (Cosmo) ЗААВАЛ хасна,
 // building/entrance/чөлөөт хайлт хослуулна.
 export function filterResidentsList(residents, { query, buildingFilter, entranceFilter }) {
