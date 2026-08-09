@@ -68,17 +68,31 @@ export default function Clientele() {
       {loading && <div className="empty-state">Ачаалж байна...</div>}
       {!loading && !list.length && <div className="empty-state">Харилцагч олдсонгүй</div>}
       {!loading && list.length > 0 && (
-        <div className="table-scroll">
+        <>
+          <div className="dt-muted" style={{ marginBottom: 10 }}>Нийт: {list.length} харилцагч</div>
+          <div className="table-scroll">
           <table className="data-table">
-            <thead><tr><th>Нэр</th><th>Регистр</th><th>Захирал</th><th>Утас</th><th>Гэрээ</th><th></th></tr></thead>
+            <thead>
+              <tr>
+                <th>№</th><th>Хуулийн этгээдийн нэр</th><th>Гэрчилгээ №</th><th>Гүйцэтгэх удирдлага</th>
+                <th>Гар утас</th><th>Утас</th><th>И-мэйл</th><th>Гэрээ №</th>
+                <th>Гэрээ эхлэх</th><th>Гэрээ дуусах</th><th>Тэмдэглэл</th><th></th>
+              </tr>
+            </thead>
             <tbody>
-              {list.map((c) => (
+              {list.map((c, idx) => (
                 <tr key={c.id} onClick={() => setEditing(c)}>
+                  <td><div className="res-row-avatar" style={{ background: 'rgba(59,130,246,0.18)', color: '#60A5FA' }}>{idx + 1}</div></td>
                   <td className="dt-title">{c.legalName}</td>
-                  <td className="dt-mono">{c.regNo || '—'}</td>
-                  <td className="dt-text">{c.ceo || '—'}</td>
-                  <td className="dt-mono">{c.mobile || c.phone || '—'}</td>
+                  <td className="dt-text dt-mono">{c.regNo || '—'}</td>
+                  <td className="dt-title">{c.ceo || '—'}</td>
+                  <td className="dt-text dt-mono">{c.mobile || '—'}</td>
+                  <td className="dt-text dt-mono">{c.phone || '—'}</td>
+                  <td className="dt-text">{c.email || '—'}</td>
                   <td className="dt-text">{c.contractNo || '—'}</td>
+                  <td className="dt-text dt-muted">{c.contractStart || '—'}</td>
+                  <td className="dt-text dt-muted">{c.contractEnd || '—'}</td>
+                  <td className="dt-muted" style={{ maxWidth: 220, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.note || ''}>{c.note || '—'}</td>
                   <td onClick={(e) => e.stopPropagation()}>
                     {perm.canWrite && <button className="btn-ghost-sm" onClick={() => setEditing(c)}>✎</button>}
                     {perm.canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(c)}>✕</button>}
@@ -88,6 +102,7 @@ export default function Clientele() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );
