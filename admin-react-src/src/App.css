@@ -274,3 +274,32 @@
 .mv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
 .mv-card { padding: 16px; cursor: pointer; }
 .mv-card:hover { border-color: var(--accent); }
+
+/* --- Dashboard --- */
+.dash-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.dash-stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+.dash-stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+.dash-stat-value { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+.dash-stat-detail { font-size: 11px; color: var(--text-dim); line-height: 1.6; }
+.dash-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 900px) { .dash-grid-2 { grid-template-columns: 1fr; } }
+.dash-card { padding: 18px; }
+.dash-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.dash-card-title { font-size: 14px; font-weight: 700; }
+.dash-card-header select {
+  background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 4px 8px; font-size: 12px; color: var(--text);
+}
+.dash-chart-bars { display: flex; gap: 4px; align-items: flex-end; height: 160px; }
+.dash-chart-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.dash-chart-bar-row { display: flex; gap: 2px; align-items: flex-end; height: 100%; width: 100%; justify-content: center; }
+.dash-chart-bar { width: 45%; min-height: 2px; border-radius: 2px 2px 0 0; }
+.dash-chart-bar.income { background: var(--success); }
+.dash-chart-bar.expense { background: var(--accent); }
+.dash-chart-label { font-size: 9px; color: var(--text-muted); margin-top: 4px; }
+.dash-progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.dash-section-title { font-size: 13px; font-weight: 700; color: var(--text-dim); margin-bottom: 10px; }
+.summary-row-list .page-header-row { padding: 3px 0; }
+
+.nav-section { padding: 14px 16px 6px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+.nav-section:first-child { padding-top: 4px; }

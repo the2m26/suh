@@ -62,6 +62,21 @@ export const ADMIN_ONLY_PAGES = [
   'activity-log', 'ai-integration-plan', 'cosmo-settings',
 ];
 
+// suh.html-ийн PAGE_LABELS (мөр ~4975) — ADMIN_ONLY_PAGES-ийн raw route
+// нэрсийг хүнлэг харагдуулна (Sidebar.jsx-д ашиглана).
+export const PAGE_LABELS = {
+  dashboard: 'Хянах самбар', residents: 'Сууц өмчлөгчийн бүртгэл', business: 'Аж ахуйн нэгж бүртгэл',
+  clientele: 'Харилцагчийн бүртгэл', finance: 'Гүйлгээний бүртгэл', assets: 'Үндсэн хөрөнгө бүртгэл',
+  payments: 'Төлбөр төлөлт', apartments: 'Тоот, зогсоол, агуулах', reports: 'СөХ дотоод тайлан',
+  fintax: 'Санхүү, татварын тайлан', communications: 'Зар, мэдэгдэл илгээх', 'cc-center': 'CC center',
+  'gate-log': 'Хаалтны удирдлага', news: 'Мэдээ, мэдээлэл', newseditor: 'Мэдээний агрегат',
+  admin: 'Хаягжилт тохиргоо', 'sokh-settings': 'СөХ тохиргоо', 'tariff-settings': 'Тариф тохиргоо',
+  'market-valuation': 'Зах зээлийн үнэлгээ', auth_levels: 'Хандах эрхийн тохиргоо', users: 'Хэрэглэгч удирдлага',
+  polls: 'Сонгууль, санал асуулга', accounting: 'Нягтлан бодох бүртгэл', 'nbb-settings': 'НББ тохиргоо',
+  'asset-settings': 'Үндсэн хөрөнгө тохиргоо', employees: 'Ажилтны бүртгэл', 'app-settings': 'UserApp тохиргоо',
+  'ai-integration-plan': 'AI Integration Plan', 'cosmo-settings': 'Cosmo тохиргоо',
+};
+
 // ------------------------------------------------------------------
 // Pure permission-check функцүүд. suh.html-ийн canView/canWrite/canAdd/...
 // глобал хувьсагч (currentProfile, myPermissions) ашигладаг байсныг React-д

@@ -21,6 +21,34 @@ export async function dbGetPartyBalance(account, party) {
   return +data || 0;
 }
 
+// accounting-bridge.js-ийн EXPENSE_SUBCAT_TO_ACCOUNT/mapExpenseSubcatToAccount()/
+// accountingRecordExpense() (мөр ~456-480) — хэрэглэгчийн 2026-08-07
+// зөвшөөрлөөр React рүү портлогдов.
+const EXPENSE_SUBCAT_TO_ACCOUNT = {
+  'Цалин хөлсний зардал': '7010',
+  'НДШ зардал': '7020',
+  'Татварын зардал (ХХОАТ)': '3020',
+  'Ашиглалтын зардалд төлсөн (цахилгаан, ус, дулаан, санхүүгийн програм)': '7040',
+  'Интернет, шуудан холбоо, бичиг хэрэг': '7050',
+  'Шатахуун, тээврийн хөлс': '7070',
+  'Хуримтлалын сан': '4100',
+  'Үндсэн хөрөнгийн элэгдэл': '7060',
+};
+
+export function mapExpenseSubcatToAccount(subcat) {
+  return EXPENSE_SUBCAT_TO_ACCOUNT[subcat] || '7090';
+}
+
+export async function accountingRecordExpense(subcat, amount, date, description) {
+  const account = mapExpenseSubcatToAccount(subcat);
+  if (account === '7060') {
+    return dbCreateJournalEntry(date, description || subcat, `expense:${account}:${date}`,
+      [{ account, debit: amount, credit: 0 }, { account: '2015', debit: 0, credit: amount }]);
+  }
+  return dbCreateJournalEntry(date, description || subcat, `expense:${account}:${date}`,
+    [{ account, debit: amount, credit: 0 }, { account: '1020', debit: 0, credit: amount }]);
+}
+
 export async function accountingRecordIncome(subcat, amount, date, description) {
   return dbCreateJournalEntry(date, description || subcat, `income:5600:${date}`,
     [{ account: '1020', debit: amount, credit: 0 }, { account: '5600', debit: 0, credit: amount }]);
