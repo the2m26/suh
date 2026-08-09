@@ -25,6 +25,11 @@ import MarketValuation from './pages/MarketValuation';
 import Finance from './pages/Finance';
 import NbbSettings from './pages/NbbSettings';
 import Fintax from './pages/Fintax';
+import Users from './pages/Users';
+import AuthLevels from './pages/AuthLevels';
+import AppSettings from './pages/AppSettings';
+import AssetSettings from './pages/AssetSettings';
+import ActivityLog from './pages/ActivityLog';
 import './App.css';
 
 // ⚠️ HashRouter ашиглав (BrowserRouter биш) — GitHub Pages дэд замд (base:
@@ -70,6 +75,12 @@ function Shell() {
           <Route path="/finance" element={<ProtectedPage pageName="finance"><Finance /></ProtectedPage>} />
           <Route path="/nbb-settings" element={<ProtectedPage pageName="nbb-settings"><NbbSettings /></ProtectedPage>} />
           <Route path="/fintax" element={<ProtectedPage pageName="fintax"><Fintax /></ProtectedPage>} />
+          <Route path="/users" element={<ProtectedPage pageName="users"><Users /></ProtectedPage>} />
+          <Route path="/auth_levels" element={<ProtectedPage pageName="auth_levels"><AuthLevels /></ProtectedPage>} />
+          <Route path="/app-settings" element={<ProtectedPage pageName="app-settings"><AppSettings /></ProtectedPage>} />
+          <Route path="/asset-settings" element={<ProtectedPage pageName="asset-settings"><AssetSettings /></ProtectedPage>} />
+          <Route path="/activity-log" element={<ProtectedPage pageName="activity-log"><ActivityLog /></ProtectedPage>} />
+          <Route path="/admin" element={<ProtectedPage pageName="admin"><Apartments /></ProtectedPage>} />
           {/* Дараагийн түвшнүүдэд модуль бүрийн page эндээс нэмэгдэнэ:
               /residents, /business, /finance, гэх мэт (lib/permissions.js
               AUTH_MODULES-ийн 'page' талбартай тааруулах) */}

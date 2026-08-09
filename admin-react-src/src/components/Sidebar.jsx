@@ -11,7 +11,10 @@ import { useAuth } from '../context/AuthContext';
 // эх суh.html-тэй тохирсон 3 бүлгийн бүтэц болгож дахин зохион байгуулав.
 const SECTION_MAIN = ['dashboard', 'residents', 'business', 'clientele', 'assets', 'employees', 'polls', 'payments', 'apartments', 'communications', 'cc-center', 'gate-log', 'news', 'newseditor'];
 const SECTION_REPORTS = ['accounting', 'reports', 'fintax', 'finance'];
-const SECTION_ADMIN = ['sokh-settings', 'admin', 'tariff-settings', 'nbb-settings', 'asset-settings', 'market-valuation', 'auth_levels', 'users', 'app-settings', 'ai-integration-plan', 'cosmo-settings'];
+const SECTION_ADMIN = ['sokh-settings', 'admin', 'tariff-settings', 'nbb-settings', 'asset-settings', 'market-valuation', 'auth_levels', 'users', 'app-settings', 'ai-integration-plan', 'cosmo-settings', 'activity-log'];
+// suh.html-ийн sidebar-д "activity-log" page-ийн харагдах нэр PAGE_LABELS-аас
+// өөр, шууд "Протокол" гэж hard-code хийгдсэн (мөр ~608) — энд мөн адилхан override.
+const NAV_LABEL_OVERRIDES = { 'activity-log': 'Протокол' };
 
 export default function Sidebar() {
   const { role, currentProfile, currentUser, logout } = useAuth();
@@ -36,7 +39,7 @@ export default function Sidebar() {
         <div className="nav-section">{title}</div>
         {visible.map((pageKey) => (
           <NavLink key={pageKey} to={`/${pageKey}`} className={({ isActive }) => 'nav-item' + (isActive ? ' active' : '')}>
-            <span>{moduleByPage[pageKey]?.label || PAGE_LABELS[pageKey] || pageKey}</span>
+            <span>{NAV_LABEL_OVERRIDES[pageKey] || moduleByPage[pageKey]?.label || PAGE_LABELS[pageKey] || pageKey}</span>
           </NavLink>
         ))}
       </>
