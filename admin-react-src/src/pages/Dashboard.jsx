@@ -237,12 +237,12 @@ export default function Dashboard() {
               <option value="total">Нийт</option>
             </select>
           </div>
-          <div className="summary-row-list">
-            <div className="page-header-row"><span className="dt-muted">Нийт төлбөр төлөгч тоо</span><span>{totalEntities}</span></div>
-            <div className="page-header-row"><span className="dt-muted">Төлбөрөө төлсөн</span><span style={{ color: 'var(--success)' }}>{paidCount}</span></div>
-            <div className="page-header-row"><span className="dt-muted">Хүлээлттэй</span><span style={{ color: 'var(--warning)' }}>{breakdown.pending}</span></div>
-            <div className="page-header-row"><span className="dt-muted">Хугацаа хэтэрсэн</span><span style={{ color: 'var(--danger)' }}>{breakdown.overdue}</span></div>
-            <div className="page-header-row"><span className="dt-muted">Эрсдэлтэй</span><span style={{ color: 'var(--danger)' }}>{breakdown.risk}</span></div>
+          <div>
+            <div className="summary-row"><span className="summary-key">Нийт төлбөр төлөгч тоо</span><span className="summary-val">{totalEntities}</span></div>
+            <div className="summary-row"><span className="summary-key">Төлбөрөө төлсөн</span><span className="summary-val" style={{ color: 'var(--success)' }}>{paidCount}</span></div>
+            <div className="summary-row"><span className="summary-key">Хүлээлттэй</span><span className="summary-val" style={{ color: 'var(--warning)' }}>{breakdown.pending}</span></div>
+            <div className="summary-row"><span className="summary-key">Хугацаа хэтэрсэн</span><span className="summary-val" style={{ color: 'var(--danger)' }}>{breakdown.overdue}</span></div>
+            <div className="summary-row"><span className="summary-key">Эрсдэлтэй</span><span className="summary-val" style={{ color: 'var(--danger)' }}>{breakdown.risk}</span></div>
           </div>
           <div style={{ marginTop: 12 }}>
             <div className="dash-progress-label"><span>{progressLabel}</span><span>{progressPct}%</span></div>
@@ -323,16 +323,16 @@ export default function Dashboard() {
         <div className="dash-section-title">Хотхоны зах зээлийн бодит үнэлгээ (Сүүлийн 12 сар)</div>
         <div className="dash-grid-2" style={{ gap: 16 }}>
           <MvMiniCard title="Орон сууцны борлуулалтын үнэ (₮/м²)" rows={recentMv} fields={['apartment_sale']} single />
-          <MvMiniCard title="Орон сууцны түрээсийн үнэ (1-6 өрөө, ₮/сар)" rows={recentMv} fields={['rent_1room', 'rent_2room', 'rent_3room', 'rent_4room', 'rent_5room', 'rent_6room']} />
-          <MvMiniCard title="Агуулах, Зогсоолын борлуулалтын үнэ" rows={recentMv} fields={['storage_sale', 'parking_sale']} />
-          <MvMiniCard title="Агуулах, Зогсоолын түрээслэх үнэ" rows={recentMv} fields={['storage_rent', 'parking_rent']} />
+          <MvMiniCard title="Орон сууцны түрээсийн үнэ (1-6 өрөө, ₮/сар)" rows={recentMv} fields={['rent_1room', 'rent_2room', 'rent_3room', 'rent_4room', 'rent_5room', 'rent_6room']} labels={['1 өрөө', '2 өрөө', '3 өрөө', '4 өрөө', '5 өрөө', '6 өрөө']} />
+          <MvMiniCard title="Агуулах, Зогсоолын борлуулалтын үнэ" rows={recentMv} fields={['storage_sale', 'parking_sale']} labels={['Агуулах', 'Зогсоол']} />
+          <MvMiniCard title="Агуулах, Зогсоолын түрээслэх үнэ" rows={recentMv} fields={['storage_rent', 'parking_rent']} labels={['Агуулах', 'Зогсоол']} />
         </div>
       </div>
     </div>
   );
 }
 
-function MvMiniCard({ title, rows, fields, single }) {
+function MvMiniCard({ title, rows, fields, labels, single }) {
   const seriesArr = fields.map((f, i) => ({ values: rows.map((r) => r[f]), color: MV_COLORS[i] }));
   const pct = single ? mvChangePct(rows, fields[0]) : null;
   const up = pct != null && pct >= 0;
@@ -353,7 +353,12 @@ function MvMiniCard({ title, rows, fields, single }) {
           {fields.map((f, i) => {
             const v = mvLastValue(rows, f);
             if (v == null) return null;
-            return <span key={f} style={{ fontSize: 11 }}><span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: MV_COLORS[i], marginRight: 4 }} />{Math.round(v).toLocaleString()}₮</span>;
+            return (
+              <span key={f} style={{ fontSize: 11 }}>
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: MV_COLORS[i], marginRight: 4 }} />
+                {labels?.[i] ? `${labels[i]}: ` : ''}{Math.round(v).toLocaleString()}₮
+              </span>
+            );
           })}
         </div>
       )}

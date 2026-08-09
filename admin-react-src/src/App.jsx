@@ -89,6 +89,7 @@ function Shell() {
               AUTH_MODULES-ийн 'page' талбартай тааруулах) */}
         </Routes>
         </div>
+        <div className="copyright-bar">© 2026 integrated systems™</div>
       </main>
     </div>
   );

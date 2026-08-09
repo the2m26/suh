@@ -97,7 +97,7 @@ body.sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
 
 /* эх suh.html-ийн .main (мөр ~112) — margin-left загвар (flex биш), sidebar
    position:fixed-тэй хос ажиллана. */
-.main { margin-left: 200px; flex: 1; min-height: 100vh; display: flex; flex-direction: column; transition: margin-left .22s ease; overflow-x: auto; }
+.main { margin-left: 200px; flex: 1; min-height: 100vh; display: flex; flex-direction: column; transition: margin-left .22s ease; }
 
 /* suh.html-ийн .topbar (мөр ~131-136) — бүх хуудасны дээд ирмэгт байх
    sticky navigation bar, хуудасны гарчигтай. 48px өндөр .logo-той таарна. */
@@ -108,7 +108,7 @@ body.sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
 }
 .page-title { font-size: 15px; font-weight: 700; }
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
-.main-content { padding: 24px 28px; }
+.main-content { padding: 24px 16px; }
 .page-denied { color: var(--text-muted); padding: 40px; text-align: center; }
 
 /* suh.html-ийн .progress-wrap/.progress-bar (мөр ~273-274) — Дашбоардын
@@ -116,6 +116,15 @@ body.sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
    байсан тул (.card-тай адил алдаа) бүрэн ил тод (харагдахгүй) байсан. */
 .progress-wrap { background: var(--bg-surface); border-radius: 4px; height: 6px; overflow: hidden; margin-top: 6px; }
 .progress-bar { height: 100%; border-radius: 4px; transition: width .4s; }
+
+/* suh.html-ийн .summary-row/.summary-key/.summary-val (мөр ~279-282) —
+   "Төлбөрийн явц" панелийн key-value жагсаалт. 2026-08-10 ЗАСАВ:
+   өмнөх хувилбар зураас (border-bottom)-гүй, padding буруу байсан тул
+   "Төлбөрийн өртэй" хүснэгэлтэй ижилгүй харагдаж байсан. */
+.summary-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(30,58,95,0.25); }
+.summary-row:last-child { border-bottom: none; }
+.summary-key { font-size: 11.5px; color: var(--text-dim); }
+.summary-val { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
 /* --- Мэдээ (News) --- */
 .page { max-width: 720px; }
@@ -361,7 +370,7 @@ body.sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
 .dash-chart-label { font-size: 9px; color: var(--text-muted); margin-top: 4px; }
 .dash-progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
 .dash-section-title { font-size: 13px; font-weight: 700; color: var(--text-dim); margin-bottom: 10px; }
-.summary-row-list .page-header-row { padding: 3px 0; }
+
 
 .nav-section { padding: 14px 16px 6px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
 .nav-section:first-child { padding-top: 4px; }
@@ -381,3 +390,6 @@ body.sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
 ::-webkit-scrollbar-thumb { background: var(--border-light, #1E3A5F) !important; border-radius: 3px !important; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted) !important; }
 * { scrollbar-width: thin; scrollbar-color: var(--border-light, #1E3A5F) transparent; }
+
+/* Copyright bar — бүх хуудсанд ижил, content body-ийн доор голлож. */
+.copyright-bar { text-align: center; padding: 12px 0 18px; font-size: 10.5px; color: #1E3A5F; }
