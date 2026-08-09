@@ -6,7 +6,7 @@ import {
 } from '../lib/financeEngine';
 import { getSpotSqm } from '../lib/parkingStorageHelpers';
 import { assetLifeProgressPct, assetLifeProgressColor } from '../lib/assetHelpers';
-import { MV_COLORS, mvLastValue } from '../lib/marketValuationHelpers';
+import { MV_COLORS, mvLastValue, mvChangePct } from '../lib/marketValuationHelpers';
 import Sparkline from '../components/Sparkline';
 
 export default function Dashboard() {
@@ -334,13 +334,18 @@ export default function Dashboard() {
 
 function MvMiniCard({ title, rows, fields, single }) {
   const seriesArr = fields.map((f, i) => ({ values: rows.map((r) => r[f]), color: MV_COLORS[i] }));
+  const pct = single ? mvChangePct(rows, fields[0]) : null;
+  const up = pct != null && pct >= 0;
   return (
     <div className="card" style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column' }}>
       <div className="dt-muted" style={{ fontSize: 12, marginBottom: 6 }}>{title}</div>
       {single ? (
         <div style={{ marginBottom: 8 }}>
           {mvLastValue(rows, fields[0]) != null ? (
-            <span style={{ fontSize: 18, fontWeight: 700 }}>{Math.round(mvLastValue(rows, fields[0])).toLocaleString()}₮</span>
+            <>
+              <span style={{ fontSize: 18, fontWeight: 700 }}>{Math.round(mvLastValue(rows, fields[0])).toLocaleString()}₮</span>
+              {pct != null && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: up ? 'var(--success)' : 'var(--danger)' }}>{up ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%</span>}
+            </>
           ) : <span className="dt-muted" style={{ fontSize: 12 }}>Дата алга</span>}
         </div>
       ) : (
