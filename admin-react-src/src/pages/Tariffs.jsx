@@ -58,34 +58,37 @@ export default function Tariffs() {
       ) : (
         <>
           <div className="page-header-row">
-            <div className="dt-muted">{rows.length} төлбөрийн мөр</div>
+            <div />
             <button className="btn-primary" onClick={() => setEditing('new')}>+ Шинэ төлбөр нэмэх</button>
           </div>
 
       {loading && <div className="empty-state">Ачаалж байна...</div>}
       {!loading && !rows.length && <div className="empty-state">Төлбөрийн мөр алга</div>}
       {!loading && rows.length > 0 && (
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead><tr><th>Нэр</th><th>Төрөл</th><th>Дүн</th><th>Төлөв</th><th></th></tr></thead>
-            <tbody>
-              {rows.map((f) => {
-                const u = FEE_UNIT_LABELS[f.unit_type] || FEE_UNIT_LABELS.flat;
-                return (
-                  <tr key={f.id} onClick={() => setEditing(f)}>
-                    <td className="dt-title">{f.locked && <span title="Хаягжилт тохиргооны бодит тоот/зогсоол/агуулахтай шууд уяатай тул нэрийг нь засах боломжгүй">🔒 </span>}{f.name}</td>
-                    <td><span className="tag">{u.badge}</span></td>
-                    <td className="dt-mono">{Math.round(f.rate).toLocaleString()}₮</td>
-                    <td>{f.active ? <span className="status-ok">Идэвхтэй</span> : <span className="status-muted">Идэвхгүй</span>}</td>
-                    <td onClick={(e) => e.stopPropagation()}>
-                      <button className="btn-ghost-sm" onClick={() => setEditing(f)}>✎</button>
-                      {!f.locked && <button className="btn-ghost-sm danger" onClick={() => handleDelete(f)}>✕</button>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table">
+              <thead><tr><th>Нэр</th><th>Төрөл</th><th>Дүн</th><th>Төлөв</th><th></th></tr></thead>
+              <tbody>
+                {rows.map((f) => {
+                  const u = FEE_UNIT_LABELS[f.unit_type] || FEE_UNIT_LABELS.flat;
+                  return (
+                    <tr key={f.id} onClick={() => setEditing(f)}>
+                      <td className="dt-title">{f.locked && <span title="Хаягжилт тохиргооны бодит тоот/зогсоол/агуулахтай шууд уяатай тул нэрийг нь засах боломжгүй">🔒 </span>}{f.name}</td>
+                      <td><span className="tag">{u.badge}</span></td>
+                      <td className="dt-mono">{Math.round(f.rate).toLocaleString()}₮</td>
+                      <td>{f.active ? <span className="status-ok">Идэвхтэй</span> : <span className="status-muted">Идэвхгүй</span>}</td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <button className="btn-ghost-sm" onClick={() => setEditing(f)}>✎</button>
+                        {!f.locked && <button className="btn-ghost-sm danger" onClick={() => handleDelete(f)}>✕</button>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="table-summary-bar"><span>{rows.length} төлбөрийн мөр</span></div>
         </div>
       )}
         </>

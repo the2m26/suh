@@ -75,22 +75,25 @@ export default function ActivityLog() {
       {loading && <div className="empty-state">Ачаалж байна...</div>}
       {!loading && !list.length && <div className="empty-state">Бүртгэл олдсонгүй</div>}
       {!loading && list.length > 0 && (
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead><tr><th>Хугацаа</th><th>Хэн</th><th>Роль</th><th>Үйлдэл</th><th>Модуль</th><th>Тайлбар</th></tr></thead>
-            <tbody>
-              {list.map((r) => (
-                <tr key={r.id}>
-                  <td className="dt-mono dt-muted">{fmtDateTime(r.created_at)}</td>
-                  <td className="dt-title">{r.actor_name || '—'}</td>
-                  <td><span className="tag">{ROLE_LABELS[r.actor_role] || r.actor_role || '—'}</span></td>
-                  <td className="dt-text">{AUTH_ACTION_LABELS[r.action] || r.action}</td>
-                  <td className="dt-text">{PAGE_LABELS[r.module] || r.module}</td>
-                  <td className="dt-muted">{r.record_label || ''}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table">
+              <thead><tr><th>Хугацаа</th><th>Хэн</th><th>Роль</th><th>Үйлдэл</th><th>Модуль</th><th>Тайлбар</th></tr></thead>
+              <tbody>
+                {list.map((r) => (
+                  <tr key={r.id}>
+                    <td className="dt-mono dt-muted">{fmtDateTime(r.created_at)}</td>
+                    <td className="dt-title">{r.actor_name || '—'}</td>
+                    <td><span className="tag">{ROLE_LABELS[r.actor_role] || r.actor_role || '—'}</span></td>
+                    <td className="dt-text">{AUTH_ACTION_LABELS[r.action] || r.action}</td>
+                    <td className="dt-text">{PAGE_LABELS[r.module] || r.module}</td>
+                    <td className="dt-muted">{r.record_label || ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="table-summary-bar"><span>Нийт: {list.length} бичлэг</span></div>
         </div>
       )}
     </div>

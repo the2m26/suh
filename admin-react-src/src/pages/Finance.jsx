@@ -130,7 +130,8 @@ function IncomeTab({ transactions, residents, businesses }) {
           {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead><tr><th>Огноо</th><th>Тоот/Нэр</th><th>Тайлбар</th><th>Данс</th><th className="ta-right">Дүн</th><th>Хэлбэр</th></tr></thead>
           <tbody>
@@ -159,6 +160,8 @@ function IncomeTab({ transactions, residents, businesses }) {
             {!list.length && <tr><td colSpan={6} className="empty-state">Орлого байхгүй</td></tr>}
           </tbody>
         </table>
+        </div>
+        {list.length > 0 && <div className="table-summary-bar"><span>Нийт: {list.length} гүйлгээ</span></div>}
       </div>
     </>
   );
@@ -202,7 +205,8 @@ function ExpenseTab({ transactions, clientele }) {
           {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead><tr><th>Огноо</th><th>Ангилал</th><th>Харилцагч</th><th>Тайлбар</th><th className="ta-right">Дүн</th></tr></thead>
           <tbody>
@@ -221,6 +225,8 @@ function ExpenseTab({ transactions, clientele }) {
             {!list.length && <tr><td colSpan={5} className="empty-state">Зарлага байхгүй</td></tr>}
           </tbody>
         </table>
+        </div>
+        {list.length > 0 && <div className="table-summary-bar"><span>Нийт: {list.length} гүйлгээ</span></div>}
       </div>
     </>
   );

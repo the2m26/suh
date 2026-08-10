@@ -134,7 +134,8 @@ function IncomeReport({ residents, businesses, transactions, feeCatalog, feeCtx,
       <div className="dt-muted" style={{ marginBottom: 10 }}>
         Нийт орлого: {total.toLocaleString()}₮ · Хүлээгдэж буй: {expected.toLocaleString()}₮ · Цуглуулалт: {expected ? Math.round((total / expected) * 100) : 0}% · Бичлэг: {monthTx.length}/{totalUnits}
       </div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+      <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead><tr><th>Тоот/ААН</th><th>Төрөл</th><th>Нэр</th><th className="ta-right">Дүн</th><th>Хэлбэр</th><th>Огноо</th></tr></thead>
           <tbody>
@@ -158,6 +159,7 @@ function IncomeReport({ residents, businesses, transactions, feeCatalog, feeCtx,
             {!monthTx.length && <tr><td colSpan={6} className="empty-state">Энэ сард орлого бүртгэгдээгүй</td></tr>}
           </tbody>
         </table>
+      </div>
       </div>
     </>
   );
@@ -183,7 +185,8 @@ function ExpenseReport({ transactions, year, month }) {
         <span style={{ fontWeight: 700 }}>Нийт зарлага</span>
         <span className="dt-mono" style={{ color: 'var(--danger)', fontSize: 18, fontWeight: 700 }}>{total.toLocaleString()}₮</span>
       </div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+      <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead><tr><th>Огноо</th><th>Ангилал</th><th>Тайлбар</th><th className="ta-right">Дүн</th></tr></thead>
           <tbody>
@@ -196,6 +199,7 @@ function ExpenseReport({ transactions, year, month }) {
             ))}
           </tbody>
         </table>
+      </div>
       </div>
     </>
   );
@@ -213,7 +217,8 @@ function DebtReport({ residents, businesses, transactions, feeCatalog, feeCtx, f
   return (
     <>
       <div className="dt-muted" style={{ marginBottom: 14 }}>Нийт хугацаа хэтэрсэн: {(overdueRes.length + overdueBiz.length)} · Нийт өр: {total.toLocaleString()}₮</div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+      <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead><tr><th>Тоот/ААН</th><th>Төрөл</th><th>Нэр</th><th>Утас</th><th className="ta-right">Хураамж</th><th className="ta-right">Торгууль</th><th className="ta-right">Нийт</th></tr></thead>
           <tbody>
@@ -247,6 +252,7 @@ function DebtReport({ residents, businesses, transactions, feeCatalog, feeCtx, f
           </tbody>
         </table>
       </div>
+      </div>
     </>
   );
 }
@@ -260,7 +266,8 @@ function BalanceReport({ journalEntries, year, month }) {
   return (
     <>
       <div className="dt-muted" style={{ marginBottom: 10 }}>{tb.balanced ? <span className="status-ok">✓ Дт = Кт тохирч байна</span> : <span style={{ color: 'var(--danger)' }}>✗ Зөрүүтэй байна</span>}</div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+      <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead><tr><th>Код</th><th>Дансны нэр</th><th>Ангилал</th><th className="ta-right">Дт</th><th className="ta-right">Кт</th></tr></thead>
           <tbody>
@@ -278,6 +285,7 @@ function BalanceReport({ journalEntries, year, month }) {
             </tr>
           </tbody>
         </table>
+      </div>
       </div>
     </>
   );
@@ -299,7 +307,8 @@ function TrendReport({ transactions, year }) {
       <div className="dt-muted" style={{ marginBottom: 10 }}>
         Жилийн нийт орлого: {totalInc.toLocaleString()}₮ · Зарлага: {totalExp.toLocaleString()}₮ · Цэвэр: {(totalInc - totalExp).toLocaleString()}₮
       </div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+      <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead><tr><th>Сар</th><th className="ta-right">Орлого</th><th className="ta-right">Зарлага</th><th className="ta-right">Цэвэр</th></tr></thead>
           <tbody>
@@ -313,6 +322,7 @@ function TrendReport({ transactions, year }) {
             ))}
           </tbody>
         </table>
+      </div>
       </div>
     </>
   );
@@ -361,7 +371,8 @@ function AgingReport({ residents, businesses, transactions, feeCatalog, feeCtx }
       <div className="dt-muted" style={{ marginBottom: 10 }}>
         1-29 хоног ({buckets.b1.length}): {totalDebt(buckets.b1).toLocaleString()}₮ · 30-89 хоног ({buckets.b23.length}): {totalDebt(buckets.b23).toLocaleString()}₮ · 90+ хоног ({buckets.b3plus.length}): {totalDebt(buckets.b3plus).toLocaleString()}₮
       </div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+      <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead><tr><th>Тоот/ААН</th><th>Нэр</th><th>Төрөл</th><th>Хугацаа</th><th className="ta-right">Хураамж</th></tr></thead>
           <tbody>
@@ -369,6 +380,7 @@ function AgingReport({ residents, businesses, transactions, feeCatalog, feeCtx }
             {!buckets.b1.length && !buckets.b23.length && !buckets.b3plus.length && <tr><td colSpan={5} className="empty-state">Өр авлагагүй</td></tr>}
           </tbody>
         </table>
+      </div>
       </div>
     </>
   );
@@ -390,7 +402,8 @@ function TxDetailReport({ residents, businesses, transactions, year, month }) {
       <div className="dt-muted" style={{ marginBottom: 10 }}>
         Нийт орлого: {totalIncome.toLocaleString()}₮ · Нийт зарлага: {totalExpense.toLocaleString()}₮ · Цэвэр урсгал: {(totalIncome - totalExpense).toLocaleString()}₮
       </div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+      <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead><tr><th>Хугацаа</th><th>Төрөл</th><th>Тоот/Нэр</th><th>Тайлбар</th><th className="ta-right">Дүн</th><th>Хэлбэр</th></tr></thead>
           <tbody>
@@ -417,6 +430,7 @@ function TxDetailReport({ residents, businesses, transactions, year, month }) {
             {!monthTx.length && <tr><td colSpan={6} className="empty-state">Энэ сард гүйлгээ бүртгэгдээгүй</td></tr>}
           </tbody>
         </table>
+      </div>
       </div>
     </>
   );
@@ -471,7 +485,8 @@ function StatementReport({ residents, businesses, transactions }) {
       ) : (
         <>
           <div className="dt-muted" style={{ marginBottom: 14 }}>{targetLabel} — Нийт төлсөн дүн: <strong style={{ color: 'var(--success)' }}>{total.toLocaleString()}₮</strong></div>
-          <div className="table-scroll">
+          <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
             <table className="data-table">
               <thead><tr><th>Огноо</th><th className="ta-right">Дүн</th><th>Хэлбэр</th></tr></thead>
               <tbody>
@@ -481,6 +496,7 @@ function StatementReport({ residents, businesses, transactions }) {
                 {!tx.length && <tr><td colSpan={3} className="empty-state">Гүйлгээ алга</td></tr>}
               </tbody>
             </table>
+          </div>
           </div>
         </>
       )}
@@ -512,7 +528,8 @@ function PayrollSummaryReport({ employees, journalEntries, year, month }) {
   return (
     <>
       <div className="dt-muted" style={{ marginBottom: 14 }}>Нийт цалингийн зардал: <strong>{grandTotal.toLocaleString()}₮</strong></div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+      <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead><tr><th>Ажилтан</th><th>Албан тушаал</th><th className="ta-right">Нийт зардал</th></tr></thead>
           <tbody>
@@ -522,6 +539,7 @@ function PayrollSummaryReport({ employees, journalEntries, year, month }) {
             {!rows.length && <tr><td colSpan={3} className="empty-state">Энэ сарын цалин батлагдаагүй</td></tr>}
           </tbody>
         </table>
+      </div>
       </div>
     </>
   );
@@ -546,7 +564,8 @@ function DepreciationSummaryReport({ assets, year, month }) {
       <div className="dt-muted" style={{ marginBottom: 14 }}>
         Худалдан авсан үнэ: {totalCost.toLocaleString()}₮ · Хуримтлагдсан элэгдэл: {totalAcc.toLocaleString()}₮ · Үлдэгдэл өртөг: {totalBook.toLocaleString()}₮
       </div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+      <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead><tr><th>Хөрөнгө</th><th className="ta-right">Худалдан авсан үнэ</th><th className="ta-right">Хуримтлагдсан элэгдэл</th><th className="ta-right">Үлдэгдэл өртөг</th></tr></thead>
           <tbody>
@@ -561,6 +580,7 @@ function DepreciationSummaryReport({ assets, year, month }) {
             {!rows.length && <tr><td colSpan={4} className="empty-state">Элэгдэл тооцох хөрөнгө алга</td></tr>}
           </tbody>
         </table>
+      </div>
       </div>
     </>
   );

@@ -90,7 +90,8 @@ export default function AuthLevels() {
       </div>
       <div className="dt-muted" style={{ fontSize: 11, margin: '-4px 0 14px 2px' }}>Роль олгох болон нүүц үг тохируулах эрх үргэлж зөвхөн Админ-д хамаарна — серверийн Edge Function дээр хатуу шалгагддаг тул энд тохируулах боломжгүй.</div>
 
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="table-scroll table-scroll-sticky">
         <table className="data-table" style={{ minWidth: 0, width: '100%', fontSize: 12 }}>
           <thead>
             <tr>
@@ -134,6 +135,7 @@ export default function AuthLevels() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       <div style={{ marginTop: 14, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>

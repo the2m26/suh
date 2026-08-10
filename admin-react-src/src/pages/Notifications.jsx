@@ -264,22 +264,25 @@ function InboxTab() {
       {loading && <div className="empty-state">Ачаалж байна...</div>}
       {!loading && !list.length && <div className="empty-state">Одоогоор ирсэн санал, хүсэлт алга</div>}
       {!loading && list.length > 0 && (
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead><tr><th>Хугацаа</th><th>Тоот</th><th>Илгээгч</th><th>Агуулга</th><th>Төлөв</th><th></th></tr></thead>
-            <tbody>
-              {list.map((r) => (
-                <tr key={r.id}>
-                  <td className="dt-mono">{fmtDT(r.created_at)}</td>
-                  <td className="dt-text">{r.apt}</td>
-                  <td className="dt-muted">{r.sender_name || ''}</td>
-                  <td className="dt-muted" style={{ maxWidth: 360, whiteSpace: 'pre-wrap' }}>{r.content}</td>
-                  <td><span className="tag">{r.status === 'new' ? 'Шинэ' : 'Хянасан'}</span></td>
-                  <td>{canReply && <button className="btn-primary btn-sm" onClick={() => handleReply(r)}>Хариулах</button>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table">
+              <thead><tr><th>Хугацаа</th><th>Тоот</th><th>Илгээгч</th><th>Агуулга</th><th>Төлөв</th><th></th></tr></thead>
+              <tbody>
+                {list.map((r) => (
+                  <tr key={r.id}>
+                    <td className="dt-mono">{fmtDT(r.created_at)}</td>
+                    <td className="dt-text">{r.apt}</td>
+                    <td className="dt-muted">{r.sender_name || ''}</td>
+                    <td className="dt-muted" style={{ maxWidth: 360, whiteSpace: 'pre-wrap' }}>{r.content}</td>
+                    <td><span className="tag">{r.status === 'new' ? 'Шинэ' : 'Хянасан'}</span></td>
+                    <td>{canReply && <button className="btn-primary btn-sm" onClick={() => handleReply(r)}>Хариулах</button>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="table-summary-bar"><span>Нийт: {list.length} хүсэлт</span></div>
         </div>
       )}
     </>

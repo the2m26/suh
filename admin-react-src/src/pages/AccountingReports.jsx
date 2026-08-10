@@ -107,7 +107,8 @@ function TrialBalanceTab({ journalEntries }) {
       <div className="dt-muted" style={{ marginBottom: 10 }}>
         {tb.balanced ? <span className="status-ok">✓ Тэнцвэртэй</span> : <span style={{ color: 'var(--danger)' }}>⚠ Тэнцвэргүй — Дт нийлбэр Кт-тэй тэнцүү биш</span>}
       </div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead><tr><th>Код</th><th>Нэр</th><th>Төрөл</th><th className="ta-right">Дт</th><th className="ta-right">Кт</th></tr></thead>
           <tbody>
@@ -127,6 +128,7 @@ function TrialBalanceTab({ journalEntries }) {
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </>
   );
@@ -156,7 +158,8 @@ function LedgerTab({ journalEntries }) {
       ) : (
         <>
           <div className="dt-muted" style={{ marginBottom: 10 }}>Эцсийн үлдэгдэл: {ledger.endingBalance.toLocaleString()}₮</div>
-          <div className="table-scroll">
+          <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
             <table className="data-table">
               <thead><tr><th>Огноо</th><th>Тайлбар</th><th>Талбар (party)</th><th className="ta-right">Дт</th><th className="ta-right">Кт</th><th className="ta-right">Үлдэгдэл</th></tr></thead>
               <tbody>
@@ -172,6 +175,7 @@ function LedgerTab({ journalEntries }) {
                 ))}
               </tbody>
             </table>
+          </div>
           </div>
         </>
       )}

@@ -118,7 +118,7 @@ function DetailPanel({ detailKey, rows, onClose, onEdit }) {
         ))}
       </div>
       <Sparkline seriesArr={seriesArr} rows={rows} aspectW={700} aspectH={200} />
-      <div className="table-scroll" style={{ marginTop: 14 }}>
+      <div className="table-scroll table-scroll-sticky" style={{ marginTop: 14, maxHeight: 'calc(100vh - 500px)' }}>
         <table className="data-table">
           <thead><tr><th>САР</th>{cfg.labels.map((l) => <th key={l} className="ta-right">{l}</th>)}<th></th></tr></thead>
           <tbody>

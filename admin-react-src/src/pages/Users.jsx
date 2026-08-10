@@ -88,33 +88,36 @@ export default function Users() {
       {loading && <div className="empty-state">Ачаалж байна...</div>}
       {!loading && !list.length && <div className="empty-state">Хэрэглэгч олдсонгүй</div>}
       {!loading && list.length > 0 && (
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead><tr><th>Роль</th><th>Нэр</th><th>Мэйл</th><th>Онлайн</th><th>Хаяг</th><th>Төлөв</th><th>Үйлдэл</th></tr></thead>
-            <tbody>
-              {list.map((u) => (
-                <tr key={u.id}>
-                  <td><span className="tag">{ROLE_LABELS[u.role] || u.role}</span></td>
-                  <td className="dt-title">{u.full_name || '—'}</td>
-                  <td className="dt-text">{u.email || u.id}</td>
-                  <td className="dt-muted" style={{ fontSize: 11 }}>—</td>
-                  <td className="dt-text dt-mono">{getUserAddress(u)}</td>
-                  <td>{u.active ? <span className="status-ok">Идэвхтэй</span> : <span className="status-muted">Идэвхгүй</span>}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {u.role !== 'admin' && (
-                        <button className="btn-ghost-sm" style={{ color: u.active ? 'var(--danger)' : 'var(--success)' }} onClick={() => handleToggleActive(u)}>
-                          {u.active ? 'Зогсоох' : 'Идэвхжүүлэх'}
-                        </button>
-                      )}
-                      <button className="btn-ghost-sm" onClick={() => setModal(u)}>✎</button>
-                      {u.role !== 'admin' && <button className="btn-ghost-sm danger" onClick={() => handleDelete(u)}>✕</button>}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table">
+              <thead><tr><th>Роль</th><th>Нэр</th><th>Мэйл</th><th>Онлайн</th><th>Хаяг</th><th>Төлөв</th><th>Үйлдэл</th></tr></thead>
+              <tbody>
+                {list.map((u) => (
+                  <tr key={u.id}>
+                    <td><span className="tag">{ROLE_LABELS[u.role] || u.role}</span></td>
+                    <td className="dt-title">{u.full_name || '—'}</td>
+                    <td className="dt-text">{u.email || u.id}</td>
+                    <td className="dt-muted" style={{ fontSize: 11 }}>—</td>
+                    <td className="dt-text dt-mono">{getUserAddress(u)}</td>
+                    <td>{u.active ? <span className="status-ok">Идэвхтэй</span> : <span className="status-muted">Идэвхгүй</span>}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        {u.role !== 'admin' && (
+                          <button className="btn-ghost-sm" style={{ color: u.active ? 'var(--danger)' : 'var(--success)' }} onClick={() => handleToggleActive(u)}>
+                            {u.active ? 'Зогсоох' : 'Идэвхжүүлэх'}
+                          </button>
+                        )}
+                        <button className="btn-ghost-sm" onClick={() => setModal(u)}>✎</button>
+                        {u.role !== 'admin' && <button className="btn-ghost-sm danger" onClick={() => handleDelete(u)}>✕</button>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="table-summary-bar"><span>Нийт: {list.length} хэрэглэгч</span></div>
         </div>
       )}
       <div className="dt-muted" style={{ marginTop: 14 }}>
