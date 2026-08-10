@@ -488,7 +488,8 @@ function PayrollTab({ employees, canWrite, currentUser, currentProfile }) {
         <div className="dt-muted">{yearMonth} сарын урьдчилсан тооцоолол{alreadyRun ? ' (аль хэдийн тооцоологдсон)' : ''}</div>
         {canWrite && <button className="btn-primary" disabled={running || alreadyRun} onClick={handleRunPayroll}>{alreadyRun ? '✓ Тооцоологдсон' : 'Цалин тооцоолох'}</button>}
       </div>
-      <div className="table-scroll">
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="table-scroll table-scroll-sticky">
         <table className="data-table">
           <thead>
             <tr>
@@ -519,9 +520,10 @@ function PayrollTab({ employees, canWrite, currentUser, currentProfile }) {
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
       <div className="dt-muted" style={{ marginTop: 14 }}>
-        Ажилтан тус бүрийн татварын override (чөлөөлөх/тусгай хувь хэмжээ) болон цалингийн нэмэгдэл (Хоол/Унаа/Утас) тохируулах бол одоогоор suh.html-ийг ашиглана уу — эдгээр тохиргооны UI хараахан React рүү ортоогүй, гэхдээ тэдгээрийг ХАДГАЛСАН DB утгыг энд тооцоололд зөв ашиглаж байна.
+        Ажилтан тус бүрийн татварын override (чөлөөлөх/тусгай хувь хэмжээ) болон цалингийн нэмэгдэл (Хоол/Унаа/Утас) тохируулах "Ажилтан нэмэх/засах" маягтад орсон байгаа.
       </div>
     </>
   );

@@ -113,24 +113,27 @@ export default function Payments() {
       {loading && <div className="empty-state">Ачаалж байна...</div>}
       {!loading && !filtered.length && <div className="empty-state">Жагсаалт хоосон</div>}
       {!loading && filtered.length > 0 && (
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead><tr><th>Нэр</th><th>Сарын төлбөр</th><th>Хоцорсон хоног</th><th></th></tr></thead>
-            <tbody>
-              {filtered.map((r) => (
-                <tr key={r.key}>
-                  <td className="dt-title">{r.label}</td>
-                  <td className="dt-text dt-mono">{r.fee.toLocaleString()}₮</td>
-                  <td className="dt-text">{r.days}</td>
-                  <td>
-                    {canPay && r.status !== 'completed' && (
-                      <button className="btn-primary btn-sm" onClick={() => setPayingEntity(r)}>Төлбөр авах</button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table" id="payments-table">
+              <thead><tr><th>Нэр</th><th>Сарын төлбөр</th><th>Хоцорсон хоног</th><th></th></tr></thead>
+              <tbody>
+                {filtered.map((r) => (
+                  <tr key={r.key}>
+                    <td className="dt-title">{r.label}</td>
+                    <td className="dt-text dt-mono">{r.fee.toLocaleString()}₮</td>
+                    <td className="dt-text">{r.days}</td>
+                    <td>
+                      {canPay && r.status !== 'completed' && (
+                        <button className="btn-primary btn-sm" onClick={() => setPayingEntity(r)}>Төлбөр авах</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="table-summary-bar"><span>Нийт: {filtered.length} мөр</span></div>
         </div>
       )}
 

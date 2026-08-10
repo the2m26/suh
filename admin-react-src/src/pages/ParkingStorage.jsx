@@ -128,23 +128,26 @@ function SpotOwnershipList({ kind, types, buildings, residents, businesses, load
   if (!rows.length) return <div className="empty-state">{cfg.emptyLabel}</div>;
 
   return (
-    <div className="table-scroll">
-      <table className="data-table">
-        <thead><tr><th>Байр</th><th>Давхар</th><th>Бүс</th><th>Дугаар</th><th>м²</th><th>Эзэмшигч</th><th>Төлөв</th></tr></thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i}>
-              <td className="dt-text">{row.building}</td>
-              <td className="dt-muted">{row.floor || '—'}</td>
-              <td className="dt-muted">{row.zone || '—'}</td>
-              <td className="dt-title dt-mono">{row.num}</td>
-              <td className="dt-text dt-mono">{row.sqm || '—'}</td>
-              <td className="dt-text">{row.owner ? (row.owner.obj.firstname ? `${row.owner.obj.firstname} ${row.owner.obj.lastname}` : row.owner.obj.name) + (row.owner.type === 'business' ? ' (ААН)' : '') : <span className="dt-muted">—</span>}</td>
-              <td>{row.owner ? <span className="status-ok">Эзэмшигчтэй</span> : <span className="status-muted">Хоосон</span>}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="card" style={{ overflow: 'hidden' }}>
+      <div className="table-scroll table-scroll-sticky">
+        <table className="data-table">
+          <thead><tr><th>Байр</th><th>Давхар</th><th>Бүс</th><th>Дугаар</th><th>м²</th><th>Эзэмшигч</th><th>Төлөв</th></tr></thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i}>
+                <td className="dt-text">{row.building}</td>
+                <td className="dt-muted">{row.floor || '—'}</td>
+                <td className="dt-muted">{row.zone || '—'}</td>
+                <td className="dt-title dt-mono">{row.num}</td>
+                <td className="dt-text dt-mono">{row.sqm || '—'}</td>
+                <td className="dt-text">{row.owner ? (row.owner.obj.firstname ? `${row.owner.obj.firstname} ${row.owner.obj.lastname}` : row.owner.obj.name) + (row.owner.type === 'business' ? ' (ААН)' : '') : <span className="dt-muted">—</span>}</td>
+                <td>{row.owner ? <span className="status-ok">Эзэмшигчтэй</span> : <span className="status-muted">Хоосон</span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="table-summary-bar"><span>Нийт: {rows.length} байрлал</span></div>
     </div>
   );
 }
@@ -161,30 +164,33 @@ function SpotTypeTable({ kind, types, buildings, perm, currentUser, currentProfi
   }
   if (!types.length) return <div className="empty-state">Өгөгдөл байхгүй</div>;
   return (
-    <div className="table-scroll">
-      <table className="data-table">
-        <thead><tr><th>Байр</th><th>Давхар</th><th>Бүс</th><th>Дугаарууд</th><th>м²</th><th></th></tr></thead>
-        <tbody>
-          {types.map((t) => {
-            const bld = buildings.find((b) => b.id === t.building_id);
-            const nums = Array.isArray(t[cfg.numField]) ? t[cfg.numField] : [];
-            const preview = nums.length > 6 ? nums.slice(0, 6).join(', ') + `... (${nums.length})` : nums.join(', ');
-            return (
-              <tr key={t.id}>
-                <td className="dt-text">{bld ? bld.label : (t.building_id || '—')}</td>
-                <td className="dt-text">{t.floor_label || '—'}</td>
-                <td className="dt-text">{t.zone_label || '—'}</td>
-                <td className="dt-title" style={{ fontSize: 12 }}>{preview || '—'}</td>
-                <td className="dt-title dt-mono">{t.sqm || '—'}</td>
-                <td>
-                  {perm.canWrite && <button className="btn-ghost-sm" onClick={() => onEdit(t)}>✎</button>}
-                  {perm.canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(t.id)}>✕</button>}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="card" style={{ overflow: 'hidden' }}>
+      <div className="table-scroll table-scroll-sticky">
+        <table className="data-table">
+          <thead><tr><th>Байр</th><th>Давхар</th><th>Бүс</th><th>Дугаарууд</th><th>м²</th><th></th></tr></thead>
+          <tbody>
+            {types.map((t) => {
+              const bld = buildings.find((b) => b.id === t.building_id);
+              const nums = Array.isArray(t[cfg.numField]) ? t[cfg.numField] : [];
+              const preview = nums.length > 6 ? nums.slice(0, 6).join(', ') + `... (${nums.length})` : nums.join(', ');
+              return (
+                <tr key={t.id}>
+                  <td className="dt-text">{bld ? bld.label : (t.building_id || '—')}</td>
+                  <td className="dt-text">{t.floor_label || '—'}</td>
+                  <td className="dt-text">{t.zone_label || '—'}</td>
+                  <td className="dt-title" style={{ fontSize: 12 }}>{preview || '—'}</td>
+                  <td className="dt-title dt-mono">{t.sqm || '—'}</td>
+                  <td>
+                    {perm.canWrite && <button className="btn-ghost-sm" onClick={() => onEdit(t)}>✎</button>}
+                    {perm.canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(t.id)}>✕</button>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="table-summary-bar"><span>Нийт: {types.length} мөр</span></div>
     </div>
   );
 }

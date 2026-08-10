@@ -95,33 +95,36 @@ function NewsEditorList({ posts, topicFilter, setTopicFilter, loading, canAdd, c
       {loading && <div className="empty-state">Ачаалж байна...</div>}
       {!loading && !posts.length && <div className="empty-state">Одоогоор мэдээ үүсгээгүй байна</div>}
       {!loading && posts.length > 0 && (
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ОГНОО</th><th>АНГИЛАЛ</th><th>ГАРЧИГ</th><th>ТӨЛӨВ</th>
-                <th>ОНЦЛОХ</th><th>ШУУРХАЙ</th><th>ПАБЛИК</th><th>үЙЛДЭЛ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {posts.map((p) => (
-                <tr key={p.id} onClick={() => onEdit(p.id)}>
-                  <td className="dt-mono">{fmtNewsEditorDate(new Date(p.created_at))}</td>
-                  <td>{newsTopicLabel(p.topic) || '—'}</td>
-                  <td className="dt-title">{p.title}</td>
-                  <td>{p.status === 'published' ? <span className="status-ok">✓ Нийтлэгдсэн</span> : <span className="status-muted">Ноорог</span>}</td>
-                  <td>{p.is_featured ? 'Тийм' : '—'}</td>
-                  <td>{p.is_breaking ? 'Тийм' : '—'}</td>
-                  <td>{p.is_public ? 'Тийм' : 'Үгүй'}</td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    {canWrite && <button className="btn-ghost-sm" onClick={() => onEdit(p.id)} title="Засах">✎</button>}
-                    {canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(p.id)} title="Устгах">✕</button>}
-                    {!canWrite && !canDelete && <span className="dt-muted">—</span>}
-                  </td>
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>ОГНОО</th><th>АНГИЛАЛ</th><th>ГАРЧИГ</th><th>ТӨЛӨВ</th>
+                  <th>ОНЦЛОХ</th><th>ШУУРХАЙ</th><th>ПАБЛИК</th><th>ҮЙЛДЭЛ</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {posts.map((p) => (
+                  <tr key={p.id} onClick={() => onEdit(p.id)}>
+                    <td className="dt-mono">{fmtNewsEditorDate(new Date(p.created_at))}</td>
+                    <td>{newsTopicLabel(p.topic) || '—'}</td>
+                    <td className="dt-title">{p.title}</td>
+                    <td>{p.status === 'published' ? <span className="status-ok">✓ Нийтлэгдсэн</span> : <span className="status-muted">Ноорог</span>}</td>
+                    <td>{p.is_featured ? 'Тийм' : '—'}</td>
+                    <td>{p.is_breaking ? 'Тийм' : '—'}</td>
+                    <td>{p.is_public ? 'Тийм' : 'Үгүй'}</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      {canWrite && <button className="btn-ghost-sm" onClick={() => onEdit(p.id)} title="Засах">✎</button>}
+                      {canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(p.id)} title="Устгах">✕</button>}
+                      {!canWrite && !canDelete && <span className="dt-muted">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="table-summary-bar"><span>Нийт: {posts.length} мэдээ</span></div>
         </div>
       )}
     </>

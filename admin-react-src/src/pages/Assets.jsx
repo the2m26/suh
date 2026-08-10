@@ -188,8 +188,9 @@ function AssetsListTab({ assets, categories, employees, locations, perm, current
 
       {!list.length && <div className="empty-state">Үндсэн хөрөнгө олдсонгүй</div>}
       {list.length > 0 && (
-        <div className="table-scroll">
-          <table className="data-table">
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+          <table className="data-table" id="asset-list-table">
             <thead><tr><th>Нэр</th><th>Barcode</th><th>Ангилал</th><th>Байршил</th><th>Хариуцагч</th><th>Үнэ</th><th>Ашиглалт</th><th>Төлөв</th><th></th></tr></thead>
             <tbody>
               {list.map((a) => {
@@ -221,6 +222,8 @@ function AssetsListTab({ assets, categories, employees, locations, perm, current
               })}
             </tbody>
           </table>
+          </div>
+          <div className="table-summary-bar"><span>Нийт: {list.length} бүртгэл</span></div>
         </div>
       )}
     </>
@@ -396,10 +399,9 @@ function MaintenanceTab({ maintenance, assets, perm, currentUser, currentProfile
       </div>
       {!list.length && <div className="empty-state">Засвар үйлчилгээ олдсонгүй</div>}
       {list.length > 0 && (
-        <>
-          <div className="dt-muted" style={{ marginBottom: 10 }}>Нийт: {list.length} бүртгэл · Нийт зардал: {totalCost.toLocaleString()}₮</div>
-          <div className="table-scroll">
-            <table className="data-table">
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table" id="asset-maintenance-table">
               <thead><tr><th>Хөрөнгө</th><th>Огноо</th><th>Тайлбар</th><th>Зардал</th><th>Нийлүүлэгч</th><th></th></tr></thead>
               <tbody>
                 {list.map((m) => {
@@ -421,7 +423,8 @@ function MaintenanceTab({ maintenance, assets, perm, currentUser, currentProfile
               </tbody>
             </table>
           </div>
-        </>
+          <div className="table-summary-bar"><span>Нийт: {list.length} бүртгэл</span><span>Нийт зардал: {totalCost.toLocaleString()}₮</span></div>
+        </div>
       )}
     </>
   );

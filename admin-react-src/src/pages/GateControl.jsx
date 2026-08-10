@@ -128,38 +128,41 @@ function GuestLogTab({ rows, residents, loading, canEdit, onConfirmPayment }) {
       {loading && <div className="empty-state">Ачаалж байна...</div>}
       {!loading && !list.length && <div className="empty-state">Бичлэг олдсонгүй</div>}
       {!loading && list.length > 0 && (
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Хүсэлт бүртгэгдсэн</th><th>Урьсан Сууц өмчлөгч</th><th>Машины дугаар</th>
-                <th>Нэвтэрсэн огноо</th><th>Хэтэрсэн мин</th><th>Төлөх дүн</th><th>Төлөв</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((r) => {
-                const needsPayment = r.charge_amount > 0 && r.payment_intent_id && r.status !== 'completed';
-                return (
-                  <tr key={r.id}>
-                    <td className="dt-mono">{fmtGateDateTime(r.created_at)}</td>
-                    <td className="dt-text">{residentLabelForApt(r.apt, residents)}</td>
-                    <td className="dt-mono">{fmtPlate(r.plate_digits, r.plate_letters)}</td>
-                    <td className="dt-mono">{fmtGateDateTime(r.entered_at)}</td>
-                    <td className="dt-text">{r.overage_minutes || '—'}</td>
-                    <td className="dt-text">{r.charge_amount ? r.charge_amount.toLocaleString() + '₮' : '—'}</td>
-                    <td><span className="tag">{GATE_STATUS_LABELS[r.status] || r.status}</span></td>
-                    <td>
-                      {needsPayment && canEdit && (
-                        <button className="btn-primary btn-sm" onClick={() => onConfirmPayment(r)}>
-                          Баталгаажуулах
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Хүсэлт бүртгэгдсэн</th><th>Урьсан Сууц өмчлөгч</th><th>Машины дугаар</th>
+                  <th>Нэвтэрсэн огноо</th><th>Хэтэрсэн мин</th><th>Төлөх дүн</th><th>Төлөв</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((r) => {
+                  const needsPayment = r.charge_amount > 0 && r.payment_intent_id && r.status !== 'completed';
+                  return (
+                    <tr key={r.id}>
+                      <td className="dt-mono">{fmtGateDateTime(r.created_at)}</td>
+                      <td className="dt-text">{residentLabelForApt(r.apt, residents)}</td>
+                      <td className="dt-mono">{fmtPlate(r.plate_digits, r.plate_letters)}</td>
+                      <td className="dt-mono">{fmtGateDateTime(r.entered_at)}</td>
+                      <td className="dt-text">{r.overage_minutes || '—'}</td>
+                      <td className="dt-text">{r.charge_amount ? r.charge_amount.toLocaleString() + '₮' : '—'}</td>
+                      <td><span className="tag">{GATE_STATUS_LABELS[r.status] || r.status}</span></td>
+                      <td>
+                        {needsPayment && canEdit && (
+                          <button className="btn-primary btn-sm" onClick={() => onConfirmPayment(r)}>
+                            Баталгаажуулах
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="table-summary-bar"><span>Нийт: {list.length} бичлэг</span></div>
         </div>
       )}
     </>
@@ -191,36 +194,39 @@ function TempParkingTab({ rows, loading, canEdit, onConfirmPayment }) {
       {loading && <div className="empty-state">Ачаалж байна...</div>}
       {!loading && !list.length && <div className="empty-state">Бичлэг олдсонгүй</div>}
       {!loading && list.length > 0 && (
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Машины дугаар</th><th>Орсон цаг</th><th>Гарсан цаг</th>
-                <th>Хэтэрсэн мин</th><th>Төлсөн дүн</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((r) => {
-                const needsPayment = r.charge_amount > 0 && r.payment_intent_id && !r.exited_at;
-                return (
-                  <tr key={r.id}>
-                    <td className="dt-mono">{fmtPlate(r.plate_digits, r.plate_letters)}</td>
-                    <td className="dt-mono">{fmtGateDateTime(r.entered_at)}</td>
-                    <td className="dt-mono">{fmtGateDateTime(r.exited_at)}</td>
-                    <td className="dt-text">{r.overage_minutes || '—'}</td>
-                    <td className="dt-text">{r.charge_amount ? r.charge_amount.toLocaleString() + '₮' : '—'}</td>
-                    <td>
-                      {needsPayment && canEdit && (
-                        <button className="btn-primary btn-sm" onClick={() => onConfirmPayment(r)}>
-                          Баталгаажуулах
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Машины дугаар</th><th>Орсон цаг</th><th>Гарсан цаг</th>
+                  <th>Хэтэрсэн мин</th><th>Төлсөн дүн</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((r) => {
+                  const needsPayment = r.charge_amount > 0 && r.payment_intent_id && !r.exited_at;
+                  return (
+                    <tr key={r.id}>
+                      <td className="dt-mono">{fmtPlate(r.plate_digits, r.plate_letters)}</td>
+                      <td className="dt-mono">{fmtGateDateTime(r.entered_at)}</td>
+                      <td className="dt-mono">{fmtGateDateTime(r.exited_at)}</td>
+                      <td className="dt-text">{r.overage_minutes || '—'}</td>
+                      <td className="dt-text">{r.charge_amount ? r.charge_amount.toLocaleString() + '₮' : '—'}</td>
+                      <td>
+                        {needsPayment && canEdit && (
+                          <button className="btn-primary btn-sm" onClick={() => onConfirmPayment(r)}>
+                            Баталгаажуулах
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="table-summary-bar"><span>Нийт: {list.length} бичлэг</span></div>
         </div>
       )}
     </>

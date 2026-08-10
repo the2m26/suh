@@ -103,31 +103,34 @@ function BuildingsTab({ buildings, perm, currentUser, currentProfile, onReload }
       </div>
       {!buildings.length && <div className="empty-state">Байр байхгүй</div>}
       {buildings.length > 0 && (
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr><th>ID</th><th>Нэр</th><th>Давхар</th><th>Тоот</th><th>Дугаарлалт</th><th>Групп</th><th></th></tr>
-            </thead>
-            <tbody>
-              {buildings.map((b) => {
-                const gc = GROUP_COLORS[b.group] || GROUP_COLORS.A;
-                return (
-                  <tr key={b.id}>
-                    <td className="dt-mono dt-title">{b.id}</td>
-                    <td className="dt-text">{b.label}</td>
-                    <td className="dt-text ta-center">{b.floors}</td>
-                    <td className="dt-text ta-center">{b.entrances > 1 ? b.entrances + 'орц · ' : ''}{b.aptsPerFloor}/давхар</td>
-                    <td className="dt-muted">{NUMBERING_SCHEME_LABELS[b.numbering_scheme] || 'Давхар+Хаалга'}</td>
-                    <td><span className="tag" style={{ background: gc.bg, color: gc.text, border: `1px solid ${gc.border}` }}>{b.group}</span></td>
-                    <td>
-                      {perm.canWrite && <button className="btn-ghost-sm" onClick={() => setEditing(b)}>✎</button>}
-                      {perm.canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(b.id)}>✕</button>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table">
+              <thead>
+                <tr><th>ID</th><th>Нэр</th><th>Давхар</th><th>Тоот</th><th>Дугаарлалт</th><th>Групп</th><th></th></tr>
+              </thead>
+              <tbody>
+                {buildings.map((b) => {
+                  const gc = GROUP_COLORS[b.group] || GROUP_COLORS.A;
+                  return (
+                    <tr key={b.id}>
+                      <td className="dt-mono dt-title">{b.id}</td>
+                      <td className="dt-text">{b.label}</td>
+                      <td className="dt-text ta-center">{b.floors}</td>
+                      <td className="dt-text ta-center">{b.entrances > 1 ? b.entrances + 'орц · ' : ''}{b.aptsPerFloor}/давхар</td>
+                      <td className="dt-muted">{NUMBERING_SCHEME_LABELS[b.numbering_scheme] || 'Давхар+Хаалга'}</td>
+                      <td><span className="tag" style={{ background: gc.bg, color: gc.text, border: `1px solid ${gc.border}` }}>{b.group}</span></td>
+                      <td>
+                        {perm.canWrite && <button className="btn-ghost-sm" onClick={() => setEditing(b)}>✎</button>}
+                        {perm.canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(b.id)}>✕</button>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="table-summary-bar"><span>Нийт: {buildings.length} байр</span></div>
         </div>
       )}
     </>
@@ -267,27 +270,30 @@ function AptTypesTab({ aptTypes, buildings, perm, currentUser, currentProfile, o
       </div>
       {!list.length && <div className="empty-state">Өгөгдөл байхгүй</div>}
       {list.length > 0 && (
-        <div className="table-scroll">
-          <table className="data-table">
-            <thead><tr><th>Байр</th><th>Хаалга</th><th>Талбай</th><th></th></tr></thead>
-            <tbody>
-              {list.map((t) => {
-                const bld = buildings.find((b) => b.id === t.building_id);
-                const doors = Array.isArray(t.door_numbers) ? t.door_numbers.join(', ') : t.door_numbers;
-                return (
-                  <tr key={t.id}>
-                    <td className="dt-text">{bld ? bld.label : t.building_id}</td>
-                    <td className="dt-text">Хаалга: <span className="dt-title">{doors}</span></td>
-                    <td className="dt-title dt-mono">{t.sqm} м²</td>
-                    <td>
-                      {perm.canWrite && <button className="btn-ghost-sm" onClick={() => setEditing(t)}>✎</button>}
-                      {perm.canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(t.id)}>✕</button>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table">
+              <thead><tr><th>Байр</th><th>Хаалга</th><th>Талбай</th><th></th></tr></thead>
+              <tbody>
+                {list.map((t) => {
+                  const bld = buildings.find((b) => b.id === t.building_id);
+                  const doors = Array.isArray(t.door_numbers) ? t.door_numbers.join(', ') : t.door_numbers;
+                  return (
+                    <tr key={t.id}>
+                      <td className="dt-text">{bld ? bld.label : t.building_id}</td>
+                      <td className="dt-text">Хаалга: <span className="dt-title">{doors}</span></td>
+                      <td className="dt-title dt-mono">{t.sqm} м²</td>
+                      <td>
+                        {perm.canWrite && <button className="btn-ghost-sm" onClick={() => setEditing(t)}>✎</button>}
+                        {perm.canDelete && <button className="btn-ghost-sm danger" onClick={() => handleDelete(t.id)}>✕</button>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="table-summary-bar"><span>Нийт: {list.length} мөр</span></div>
         </div>
       )}
     </>
