@@ -47,7 +47,6 @@ export default function Tariffs() {
 
   return (
     <div className="page page-wide">
-      <h2>Тариф тохиргоо</h2>
       <div className="gate-tabs">
         <button className={'gate-tab' + (tab === 'resident' ? ' active' : '')} onClick={() => setTab('resident')}>Сууц өмчлөгч</button>
         <button className={'gate-tab' + (tab === 'business' ? ' active' : '')} onClick={() => setTab('business')}>Аж ахуйн нэгж</button>

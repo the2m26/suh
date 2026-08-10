@@ -72,7 +72,6 @@ export default function Reports() {
 
   return (
     <div className="page page-wide">
-      <h2>СӨХ дотоод тайлан</h2>
       <div className="gate-tabs">
         <button className={'gate-tab' + (tab === 'income' ? ' active' : '')} onClick={() => setTab('income')}>Орлогын тайлан</button>
         <button className={'gate-tab' + (tab === 'expense' ? ' active' : '')} onClick={() => setTab('expense')}>Зарлагын тайлан</button>

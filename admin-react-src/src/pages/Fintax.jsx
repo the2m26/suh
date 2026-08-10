@@ -6,7 +6,6 @@ import { Link } from 'react-router-dom';
 export default function Fintax() {
   return (
     <div className="page">
-      <h2>Санхүү, татварын тайлан</h2>
       <div className="dt-muted" style={{ marginBottom: 14 }}>
         СөХ-ийн байгууллагын профайл (регистр, банкны данс г.м) одоо{' '}
         <Link to="/sokh-settings" style={{ color: 'var(--accent)' }}>СөХ тохиргоо</Link> хуудсанд байрлана.

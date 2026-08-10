@@ -72,7 +72,6 @@ export default function MarketValuation() {
   return (
     <div className="page page-wide">
       <div className="page-header-row">
-        <h2>Зах зээлийн үнэлгээ</h2>
         {isAdmin && <button className="btn-primary" onClick={() => setEditing(true)}>+ Сарын үнэ оруулах</button>}
       </div>
 

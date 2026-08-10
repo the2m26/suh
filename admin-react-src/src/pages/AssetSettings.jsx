@@ -28,7 +28,6 @@ export default function AssetSettings() {
 
   return (
     <div className="page">
-      <h2>Үндсэн хөрөнгө тохиргоо</h2>
       <div className="gate-tabs">
         <button className={'gate-tab' + (tab === 'category' ? ' active' : '')} onClick={() => setTab('category')}>Ангилал</button>
         <button className={'gate-tab' + (tab === 'type' ? ' active' : '')} onClick={() => setTab('type')}>Төрөл</button>

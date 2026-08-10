@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { sb } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
-import { logActivity } from '../lib/dbUtils';
+import { logActivity, printCurrentPage, exportTableToXlsx } from '../lib/dbUtils';
 import { calcEntityFee, allocatePaymentToMonths } from '../lib/financeEngine';
 import { getSpotSqm, validateSpotAssignment, spotFullLabel } from '../lib/parkingStorageHelpers';
 import { filterBusinessesList, contractStatus, businessMonthBadges } from '../lib/businessHelpers';
@@ -93,22 +93,22 @@ export default function Businesses() {
 
   return (
     <div className="page page-wide">
-      <div className="page-header-row">
-        <h2>Аж ахуйн нэгж</h2>
-        {perm.canAdd && <button className="btn-primary" onClick={() => setEditing('new')}>+ ААН нэмэх</button>}
-      </div>
-      <div className="gate-filters">
-        <input placeholder="Хайх (нэр, регистр, утас)..." value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="flex-between mb-16">
+        <div className="gate-filters" style={{ marginBottom: 0 }}>
+          <input placeholder="Хайх (нэр, регистр, утас)..." value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-outline" onClick={printCurrentPage}>Хэвлэх</button>
+          <button className="btn-outline" onClick={() => exportTableToXlsx('business-main-table', 'Аж_ахуйн_нэгж.xlsx')}>Экспорт</button>
+          {perm.canAdd && <button className="btn-primary" onClick={() => setEditing('new')}>+ ААН нэмэх</button>}
+        </div>
       </div>
       {loading && <div className="empty-state">Ачаалж байна...</div>}
       {!loading && !list.length && <div className="empty-state">Аж ахуйн нэгж олдсонгүй</div>}
       {!loading && list.length > 0 && (
-        <>
-          <div className="dt-muted" style={{ marginBottom: 10 }}>
-            Нийт: {list.length} байгууллага · Өмчлөгч: {list.filter((b) => b.type === 'owner').length} · Түрээслэгч: {list.filter((b) => b.type === 'tenant').length}
-          </div>
-          <div className="table-scroll">
-            <table className="data-table">
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+            <table className="data-table" id="business-main-table">
               <thead>
                 <tr>
                   <th>№</th><th>Нэр</th><th>Регистр</th><th>Төрөл</th><th>Захирал</th>
@@ -156,7 +156,12 @@ export default function Businesses() {
               </tbody>
             </table>
           </div>
-        </>
+          <div className="table-summary-bar">
+            <span>Нийт: {list.length} байгууллага</span>
+            <span>Өмчлөгч: {list.filter((b) => b.type === 'owner').length}</span>
+            <span>Түрээслэгч: {list.filter((b) => b.type === 'tenant').length}</span>
+          </div>
+        </div>
       )}
       {payingBusiness && (
         <BizPaymentModal

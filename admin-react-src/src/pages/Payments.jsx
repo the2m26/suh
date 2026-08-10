@@ -99,7 +99,6 @@ export default function Payments() {
 
   return (
     <div className="page page-wide">
-      <h2>Төлбөр төлөлт</h2>
       <div className="gate-tabs">
         {Object.entries(STATUS_TAB_LABELS).map(([k, label]) => (
           <button key={k} className={'gate-tab' + (tab === k ? ' active' : '')} onClick={() => setTab(k)}>

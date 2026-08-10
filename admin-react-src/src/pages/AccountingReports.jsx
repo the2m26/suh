@@ -27,7 +27,6 @@ export default function AccountingReports() {
 
   return (
     <div className="page page-wide">
-      <h2>НББ тайлан</h2>
       <div className="gate-tabs">
         <button className={'gate-tab' + (tab === 'trial' ? ' active' : '')} onClick={() => setTab('trial')}>Тэнцэл шалгах хүснэгэт</button>
         <button className={'gate-tab' + (tab === 'ledger' ? ' active' : '')} onClick={() => setTab('ledger')}>Дэвтэр (данс тус бүр)</button>

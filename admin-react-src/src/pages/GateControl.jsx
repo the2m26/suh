@@ -75,7 +75,6 @@ export default function GateControl() {
 
   return (
     <div className="page page-wide">
-      <h2>Хаалтны удирдлага</h2>
       <div className="gate-tabs">
         <button className={'gate-tab' + (tab === 'guests' ? ' active' : '')} onClick={() => setTab('guests')}>Зочид</button>
         <button className={'gate-tab' + (tab === 'temp' ? ' active' : '')} onClick={() => setTab('temp')}>Түр зогссон машид</button>

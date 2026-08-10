@@ -188,7 +188,6 @@ export default function CCCenter() {
 
   return (
     <div className="page page-wide">
-      <h2>CC center</h2>
       <div className="cc-layout">
         <div className="cc-sidebar">
           <div className="cc-filters">

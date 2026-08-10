@@ -37,7 +37,6 @@ export default function NbbSettings() {
 
   return (
     <div className="page page-wide">
-      <h2>НББ тохиргоо</h2>
       <div className="gate-tabs">
         <button className={'gate-tab' + (tab === 'tax' ? ' active' : '')} onClick={() => setTab('tax')}>Татварын төрлүүд</button>
         <button className={'gate-tab' + (tab === 'components' ? ' active' : '')} onClick={() => setTab('components')}>Цалингийн нэмэгдэл</button>

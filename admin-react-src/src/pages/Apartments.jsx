@@ -50,7 +50,6 @@ export default function Apartments() {
 
   return (
     <div className="page page-wide">
-      <h2>Тоот, зогсоол, агуулах</h2>
       <div className="gate-tabs">
         <button className={'gate-tab' + (tab === 'buildings' ? ' active' : '')} onClick={() => setTab('buildings')}>Байрууд</button>
         <button className={'gate-tab' + (tab === 'apttypes' ? ' active' : '')} onClick={() => setTab('apttypes')}>Талбайн төрөл</button>

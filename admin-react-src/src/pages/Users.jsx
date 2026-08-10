@@ -9,14 +9,19 @@ const USER_MGT_URL = 'https://ndbhgzohmjumicziefnr.supabase.co/functions/v1/user
 async function callUserMgt(body) {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { alert('Нэвтрээгүй байна'); return null; }
-  const res = await fetch(USER_MGT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!res.ok) { alert('Алдаа гарлаа: ' + (data.error || res.statusText)); return null; }
-  return data;
+  try {
+    const res = await fetch(USER_MGT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert('Алдаа гарлаа: ' + (data.error || res.statusText)); return null; }
+    return data;
+  } catch (e) {
+    console.error('user-management Edge Function холбогдоход алдаа гарлаа:', e);
+    return null;
+  }
 }
 
 // suh.html-ийн "Хэрэглэгч удирдлага" (users) хуудас — эрхтэй хэрэглэгч

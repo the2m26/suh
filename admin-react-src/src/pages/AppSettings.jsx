@@ -24,7 +24,6 @@ export default function AppSettings() {
 
   return (
     <div className="page">
-      <h2>UserApp тохиргоо</h2>
       <div className="gate-tabs">
         <button className={'gate-tab' + (tab === 'modules' ? ' active' : '')} onClick={() => setTab('modules')}>Модуль тохиргоо</button>
         <button className={'gate-tab' + (tab === 'call-service' ? ' active' : '')} onClick={() => setTab('call-service')}>Төлбөрт үйлчилгээ</button>

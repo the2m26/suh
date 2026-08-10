@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { sb } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
-import { logActivity } from '../lib/dbUtils';
+import { logActivity, printCurrentPage, exportTableToXlsx } from '../lib/dbUtils';
 import { employeeDisplayName, filterEmployeesList } from '../lib/employeeHelpers';
 import { calculatePayrollGeneric, buildPayrollLinesGeneric } from '../lib/payrollEngine';
 import { dbCreateJournalEntry } from '../lib/accountingBridge';
@@ -65,7 +65,6 @@ export default function Employees() {
 
   return (
     <div className="page page-wide">
-      <h2>Ажилтны бүртгэл</h2>
       <div className="gate-tabs">
         <button className={'gate-tab' + (tab === 'list' ? ' active' : '')} onClick={() => setTab('list')}>Жагсаалт</button>
         <button className={'gate-tab' + (tab === 'payroll' ? ' active' : '')} onClick={() => setTab('payroll')}>Цалингийн явц</button>
@@ -75,22 +74,22 @@ export default function Employees() {
         <PayrollTab employees={employees} canWrite={perm.canWrite} currentUser={currentUser} currentProfile={currentProfile} />
       ) : (
         <>
-          <div className="page-header-row">
-            <div />
-            {perm.canAdd && <button className="btn-primary" onClick={() => setEditing('new')}>+ Ажилтан нэмэх</button>}
-          </div>
-          <div className="gate-filters">
-            <input placeholder="Хайх (нэр, албан тушаал)..." value={query} onChange={(e) => setQuery(e.target.value)} />
+          <div className="flex-between mb-16">
+            <div className="gate-filters" style={{ marginBottom: 0 }}>
+              <input placeholder="Хайх (нэр, албан тушаал)..." value={query} onChange={(e) => setQuery(e.target.value)} />
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn-outline" onClick={printCurrentPage}>Хэвлэх</button>
+              <button className="btn-outline" onClick={() => exportTableToXlsx('employees-main-table', 'Ажилтнууд.xlsx')}>Экспорт</button>
+              {perm.canAdd && <button className="btn-primary" onClick={() => setEditing('new')}>+ Ажилтан нэмэх</button>}
+            </div>
           </div>
           {loading && <div className="empty-state">Ачаалж байна...</div>}
           {!loading && !list.length && <div className="empty-state">Ажилтан олдсонгүй</div>}
           {!loading && list.length > 0 && (
-            <>
-              <div className="dt-muted" style={{ marginBottom: 10 }}>
-                Нийт: {employees.length} ажилтан · Ажиллаж байгаа: {activeCount} · Сарын нийт үндсэн цалин: {totalSalary.toLocaleString()}₮
-              </div>
-              <div className="table-scroll">
-                <table className="data-table">
+            <div className="card" style={{ overflow: 'hidden' }}>
+              <div className="table-scroll table-scroll-sticky">
+                <table className="data-table" id="employees-main-table">
                   <thead>
                     <tr>
                       <th>№</th><th>Нэр</th><th>Регистр</th><th>ТТД</th><th>Албан тушаал</th>
@@ -125,7 +124,12 @@ export default function Employees() {
                   </tbody>
                 </table>
               </div>
-            </>
+              <div className="table-summary-bar">
+                <span>Нийт: {employees.length} ажилтан</span>
+                <span style={{ color: 'var(--success)' }}>Ажиллаж байгаа: {activeCount}</span>
+                <span>Сарын нийт үндсэн цалин: {totalSalary.toLocaleString()}₮</span>
+              </div>
+            </div>
           )}
         </>
       )}

@@ -45,7 +45,6 @@ export default function ActivityLog() {
 
   return (
     <div className="page page-wide">
-      <h2>Үйл ажиллагааны бүртгэл</h2>
       <div className="gate-filters">
         <select value={year} onChange={(e) => setYear(e.target.value)}>
           <option value="">Бүх он</option>

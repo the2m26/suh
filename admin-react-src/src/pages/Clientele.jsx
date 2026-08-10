@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { sb } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
-import { logActivity } from '../lib/dbUtils';
+import { logActivity, printCurrentPage, exportTableToXlsx } from '../lib/dbUtils';
 import { filterClienteleList } from '../lib/businessHelpers';
 
 function mapClienteleRow(c) {
@@ -58,20 +58,22 @@ export default function Clientele() {
 
   return (
     <div className="page page-wide">
-      <div className="page-header-row">
-        <h2>Харилцагчийн бүртгэл</h2>
-        {perm.canAdd && <button className="btn-primary" onClick={() => setEditing('new')}>+ Харилцагч нэмэх</button>}
-      </div>
-      <div className="gate-filters">
-        <input placeholder="Хайх..." value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="flex-between mb-16">
+        <div className="gate-filters" style={{ marginBottom: 0 }}>
+          <input placeholder="Хайх..." value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-outline" onClick={printCurrentPage}>Хэвлэх</button>
+          <button className="btn-outline" onClick={() => exportTableToXlsx('clientele-main-table', 'Харилцагчид.xlsx')}>Экспорт</button>
+          {perm.canAdd && <button className="btn-primary" onClick={() => setEditing('new')}>+ Харилцагч нэмэх</button>}
+        </div>
       </div>
       {loading && <div className="empty-state">Ачаалж байна...</div>}
       {!loading && !list.length && <div className="empty-state">Харилцагч олдсонгүй</div>}
       {!loading && list.length > 0 && (
-        <>
-          <div className="dt-muted" style={{ marginBottom: 10 }}>Нийт: {list.length} харилцагч</div>
-          <div className="table-scroll">
-          <table className="data-table">
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div className="table-scroll table-scroll-sticky">
+          <table className="data-table" id="clientele-main-table">
             <thead>
               <tr>
                 <th>№</th><th>Хуулийн этгээдийн нэр</th><th>Гэрчилгээ №</th><th>Гүйцэтгэх удирдлага</th>
@@ -102,7 +104,10 @@ export default function Clientele() {
             </tbody>
           </table>
         </div>
-        </>
+          <div className="table-summary-bar">
+            <span>Нийт: {list.length} харилцагч</span>
+          </div>
+        </div>
       )}
     </div>
   );

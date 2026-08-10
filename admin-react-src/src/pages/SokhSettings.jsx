@@ -43,7 +43,6 @@ export default function SokhSettings() {
 
   return (
     <div className="page">
-      <h2>СӨХ тохиргоо</h2>
 
       <div className="field-row">
         <label className="field"><span>Байгууллагын нэр</span><input value={profile.org_name} onChange={(e) => set('org_name', e.target.value)} /></label>

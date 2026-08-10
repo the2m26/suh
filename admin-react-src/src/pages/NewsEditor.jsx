@@ -85,7 +85,6 @@ function NewsEditorList({ posts, topicFilter, setTopicFilter, loading, canAdd, c
   return (
     <>
       <div className="page-header-row">
-        <h2>Мэдээний агрегат</h2>
         {canAdd && <button className="btn-primary" onClick={onAdd}>+ Шинэ мэдээ</button>}
       </div>
       <select className="news-topic-filter" value={topicFilter} onChange={(e) => setTopicFilter(e.target.value)}>

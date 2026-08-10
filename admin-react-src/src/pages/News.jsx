@@ -57,7 +57,6 @@ export default function News() {
 
   return (
     <div className="page">
-      <h2>Мэдээ, мэдээлэл</h2>
       <select
         className="news-topic-filter"
         value={topicFilter}

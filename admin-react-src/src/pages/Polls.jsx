@@ -38,7 +38,6 @@ export default function Polls() {
     return (
       <div className="page">
         <div className="page-header-row">
-          <h2>Сонгууль, санал асуулга</h2>
           {canManage && <button className="btn-primary" onClick={() => setView('create')}>+ Санал хураалт үүсгэх</button>}
         </div>
         {loading && <div className="empty-state">Ачаалж байна...</div>}

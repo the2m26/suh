@@ -105,8 +105,6 @@ export default function Residents() {
 
   return (
     <div className="page page-wide">
-      <h2>Сууц өмчлөгчийн бүртгэл</h2>
-
       <div className="flex-between mb-16">
         <div className="gate-filters" style={{ marginBottom: 0 }}>
           <select value={buildingFilter} onChange={(e) => { setBuildingFilter(e.target.value); setEntranceFilter(''); }}>

@@ -120,7 +120,6 @@ export default function Assets() {
 
   return (
     <div className="page page-wide">
-      <h2>Үндсэн хөрөнгө</h2>
       <div className="gate-tabs">
         <button className={'gate-tab' + (tab === 'list' ? ' active' : '')} onClick={() => setTab('list')}>Жагсаалт</button>
         <button className={'gate-tab' + (tab === 'maintenance' ? ' active' : '')} onClick={() => setTab('maintenance')}>Засвар үйлчилгээ</button>

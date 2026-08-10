@@ -53,7 +53,6 @@ export default function Finance() {
   return (
     <div className="page page-wide">
       <div className="page-header-row">
-        <h2>Гүйлгээний бүртгэл</h2>
         {canAddTx && (
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn-outline" onClick={() => setAdding('income')}>+ Орлого нэмэх</button>

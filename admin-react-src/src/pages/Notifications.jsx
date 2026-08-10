@@ -15,7 +15,6 @@ export default function Notifications() {
   const [tab, setTab] = useState('send');
   return (
     <div className="page page-wide">
-      <h2>Зар, мэдэгдэл</h2>
       <div className="gate-tabs">
         <button className={'gate-tab' + (tab === 'send' ? ' active' : '')} onClick={() => setTab('send')}>Илгээх</button>
         <button className={'gate-tab' + (tab === 'inbox' ? ' active' : '')} onClick={() => setTab('inbox')}>Ирсэн санал, хүсэлт</button>

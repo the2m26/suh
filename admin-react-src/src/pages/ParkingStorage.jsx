@@ -92,7 +92,6 @@ export default function ParkingStorage() {
 
   return (
     <div className="page page-wide">
-      <h2>Зогсоол, агуулах</h2>
       <div className="gate-tabs">
         <button className={'gate-tab' + (kind === 'parking' ? ' active' : '')} onClick={() => setKind('parking')}>Зогсоол</button>
         <button className={'gate-tab' + (kind === 'storage' ? ' active' : '')} onClick={() => setKind('storage')}>Агуулах</button>
